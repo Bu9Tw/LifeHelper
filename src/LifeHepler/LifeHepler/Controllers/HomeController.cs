@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace LifeHepler.Controllers
 {
-    [Route("[controller]")]
+    [Route("")]
     [ApiController]
     public class HomeController : ControllerBase
     {

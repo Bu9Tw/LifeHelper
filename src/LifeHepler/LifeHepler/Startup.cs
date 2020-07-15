@@ -10,6 +10,10 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Model.GoogleSheet;
+using Model.LineBot;
+using Service.GoogleSheet;
+using Service.GoogleSheet.Interface;
 
 namespace LifeHepler
 {
@@ -26,6 +30,12 @@ namespace LifeHepler
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
+            services.AddHttpContextAccessor();
+            services.Configure<LineBotSecretKeyModel>(Configuration.GetSection("LineBot"));
+            services.Configure<GoogleSheetCredential>(Configuration.GetSection("installed"));
+            services.Configure<GoogleSheetModel>(Configuration.GetSection("GoogleSheet"));
+            services.AddScoped<IGoogleSheetService, GoogleSheetService>();
+
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

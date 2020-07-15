@@ -36,3 +36,17 @@
 /src/LifeHepler/LifeHepler/obj
 /src/LifeHepler/LifeHepler/bin/Debug/netcoreapp3.1
 /src/LifeHepler/.vs/LifeHepler/config
+/src/LifeHepler/.vs/LifeHepler/DesignTimeBuild
+/src/LifeHepler/HeplerLibs/bin/Debug/netcoreapp3.1
+/src/LifeHepler/HeplerLibs/obj
+/src/LifeHepler/Model/bin/Debug/netcoreapp3.1
+/src/LifeHepler/Model/obj
+/src/LifeHepler/Service/obj
+/src/LifeHepler/Service/bin/Debug/netcoreapp3.1
+/src/LifeHepler/LifeHepler/appsettings.json
+/src/LifeHepler/LifeHepler/Properties/PublishProfiles
+/src/LifeHepler/HeplerLibs/bin/Release/netcoreapp3.1
+/src/LifeHepler/LifeHepler/bin/Release/netcoreapp3.1
+/src/LifeHepler/Model/bin/Release/netcoreapp3.1
+/src/LifeHepler/Service/bin/Release/netcoreapp3.1
+/src/LifeHepler/LifeHepler/token.json
