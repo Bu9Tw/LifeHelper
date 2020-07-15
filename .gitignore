@@ -44,3 +44,9 @@
 /src/LifeHepler/Service/obj
 /src/LifeHepler/Service/bin/Debug/netcoreapp3.1
 /src/LifeHepler/LifeHepler/appsettings.json
+/src/LifeHepler/LifeHepler/Properties/PublishProfiles
+/src/LifeHepler/HeplerLibs/bin/Release/netcoreapp3.1
+/src/LifeHepler/LifeHepler/bin/Release/netcoreapp3.1
+/src/LifeHepler/Model/bin/Release/netcoreapp3.1
+/src/LifeHepler/Service/bin/Release/netcoreapp3.1
+/src/LifeHepler/LifeHepler/token.json
