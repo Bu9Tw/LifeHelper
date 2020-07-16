@@ -12,6 +12,8 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Model.GoogleSheet;
 using Model.LineBot;
+using Service.Crawler;
+using Service.Crawler.Interface;
 using Service.GoogleSheet;
 using Service.GoogleSheet.Interface;
 
@@ -35,7 +37,13 @@ namespace LifeHepler
             services.Configure<GoogleSheetCredential>(Configuration.GetSection("installed"));
             services.Configure<GoogleSheetModel>(Configuration.GetSection("GoogleSheet"));
             services.AddScoped<IGoogleSheetService, GoogleSheetService>();
-
+            services.AddScoped<IOneOFourCrawlerService, OneOFourCrawlerService>();
+            //每次Call Method都注入一個新的
+            //services.AddTransient
+            //每個LifeCycle注入一個新的
+            //services.AddScoped   
+            //只會在站台啟動時注入一個新的
+            //services.AddSingleton
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

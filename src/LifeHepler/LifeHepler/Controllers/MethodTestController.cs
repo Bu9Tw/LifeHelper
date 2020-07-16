@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Service.Crawler.Interface;
 using Service.GoogleSheet.Interface;
 
 namespace LifeHepler.Controllers
@@ -13,11 +14,20 @@ namespace LifeHepler.Controllers
     public class MethodTestController : ControllerBase
     {
         private readonly IGoogleSheetService _googleSheetService;
-
-        public MethodTestController(IGoogleSheetService googleSheetService)
+        private readonly IOneOFourCrawlerService _oneOFourCrawlerService;
+        
+        public MethodTestController(IGoogleSheetService googleSheetService,
+            IOneOFourCrawlerService oneOFourCrawlerService)
         {
             _googleSheetService = googleSheetService;
+            _oneOFourCrawlerService = oneOFourCrawlerService;
+        }
 
+        [HttpGet("OneOFour")]
+        public string OneOFour()
+        {
+            _oneOFourCrawlerService.SynchronizeOneOFourXml();
+            return "";
         }
 
         [HttpGet("WriteGoogleSheet")]
