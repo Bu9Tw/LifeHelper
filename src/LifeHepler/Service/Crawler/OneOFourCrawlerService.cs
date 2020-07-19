@@ -221,8 +221,8 @@ namespace Service.Crawler
         {
             SynchronizeOneOFourXml(userType);
             var existData = GetOneOFourLocalXmlInfo(userType).OrderByDescending(x => x.SynchronizeDate);
-            var result = new StringBuilder("來源網址 : " + _sourceUrl);
-
+            var result = new StringBuilder();
+            result.AppendLine("來源網址 : " + _sourceUrl);
             foreach (var item in existData)
             {
                 result.AppendLine(item.SynchronizeDate.Value.ToString("yyyy/MM/dd HH:mm:ss"));
