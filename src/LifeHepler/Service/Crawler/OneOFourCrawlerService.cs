@@ -19,10 +19,10 @@ namespace Service.Crawler
         private int _userType { get; set; }
         private string _dirPath => Path.Combine(_hostingEnvironment.ContentRootPath, "OneOFourXml");
         private string _filePath => Path.Combine(_dirPath, $"{DateTime.Now:yyyyMMdd}_{_userType}.xml");
-        private string  _sourceUrl =>  _userType == 1 ?
-                @"https://www.104.com.tw/jobs/search/?ro=0&isnew=0&keyword=.net&jobcatExpansionType=0&area=6001001000%2C6001002000&order=15&asc=0&s9=1&s5=0&wktm=1&page={0}&mode=s&searchTempExclude=2":
+        private string _sourceUrl => _userType == 1 ?
+                @"https://www.104.com.tw/jobs/search/?ro=0&isnew=0&keyword=.net&jobcatExpansionType=0&area=6001001000%2C6001002000&order=15&asc=0&s9=1&s5=0&wktm=1&page={0}&mode=s&searchTempExclude=2" :
                 @"https://www.104.com.tw/jobs/search/?ro=0&jobcat=2003001006%2C2003001010%2C2002001000&isnew=0&jobcatExpansionType=1&area=6001002000%2C6001001000&order=11&asc=0&sctp=M&scmin=30000&scstrict=1&scneg=0&s9=1&wktm=1&page={0}&mode=s&jobsource=2018indexpoc&searchTempExclude=2";
-            
+
 
         public OneOFourCrawlerService(IHostingEnvironment hostingEnvironment)
         {
@@ -66,7 +66,7 @@ namespace Service.Crawler
             if (oldJobData != null && oldJobData.Any() && oldJobData.Max(x => x.SynchronizeDate.Value).AddMinutes(10) > DateTime.Now)
                 return;
 
-           HttpWebRequest request;
+            HttpWebRequest request;
             var page = 1;
             var requestUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.106 Safari/537.36";
             var requestAccept = "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9";
@@ -223,15 +223,16 @@ namespace Service.Crawler
             var existData = GetOneOFourLocalXmlInfo(userType).OrderByDescending(x => x.SynchronizeDate);
             var result = new StringBuilder();
             result.AppendLine("來源網址 : " + _sourceUrl);
+            result.AppendLine(string.Empty);
             foreach (var item in existData)
             {
-                result.AppendLine(item.SynchronizeDate.Value.ToString("yyyy/MM/dd HH:mm:ss"));
+                result.AppendLine("時間 : " + item.SynchronizeDate.Value.ToString("yyyy/MM/dd HH:mm:ss"));
                 foreach (var jobInfo in item.OneOFourHtmlJobInfos)
                 {
                     result.AppendLine(jobInfo.Name);
                     result.AppendLine(jobInfo.CompanyName);
                     result.AppendLine($"{jobInfo.DetailLink}");
-                    result.AppendLine("");
+                    result.AppendLine(string.Empty);
                 }
                 result.AppendLine("-----------------------------");
             }
