@@ -6,21 +6,21 @@ namespace Service.Crawler.Interface
     public interface IOneOFourCrawlerService
     {
         /// <summary>
-        /// 存取實體資料
+        /// 更新與存取檔案
         /// </summary>
         /// <returns></returns>
-        public string ReadLocalData();
+        public string SynAndReadData(int userType);
 
         /// <summary>
         /// 同步104職缺資料
         /// </summary>
-        public void SynchronizeOneOFourXml();
+        public void SynchronizeOneOFourXml(int userType);
 
         /// <summary>
         /// 取得當天已存在的xml檔案資料
         /// </summary>
         /// <returns></returns>
-        IEnumerable<OneOFourHtmlModel> GetOneOFourLocalXmlInfo();
+        public IEnumerable<OneOFourHtmlModel> GetOneOFourLocalXmlInfo(int userType);
 
     }
 }

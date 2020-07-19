@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Service.Crawler;
+﻿using Microsoft.AspNetCore.Mvc;
 using Service.Crawler.Interface;
 
 namespace LifeHepler.Areas.Crawler.Controllers
@@ -17,7 +11,19 @@ namespace LifeHepler.Areas.Crawler.Controllers
 
         public OneOFourController(IOneOFourCrawlerService oneOFourCrawlerService)
         {
+            _oneOFourCrawlerService = oneOFourCrawlerService;
+        }
 
+        [HttpGet("GetJobInfo")]
+        public string GetOneOFourXml()
+        {
+            return _oneOFourCrawlerService.SynAndReadData(1);
+        }
+
+        [HttpGet("GetJobInfoForChien")]
+        public string GetOneOFourXml_2()
+        {
+            return _oneOFourCrawlerService.SynAndReadData(2);
         }
     }
 }

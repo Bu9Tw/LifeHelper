@@ -31,14 +31,14 @@ namespace LifeHepler.Controllers
         public void GetLogger()
         {
             return;
-            _logger.LogInformation(new Exception("123"),"QQ");
+            _logger.LogInformation(new Exception("123"), "QQ");
         }
 
         [HttpGet("OneOFour")]
         public void OneOFour()
         {
             return;
-            _oneOFourCrawlerService.SynchronizeOneOFourXml();
+            _oneOFourCrawlerService.SynchronizeOneOFourXml(1);
             return;
         }
 

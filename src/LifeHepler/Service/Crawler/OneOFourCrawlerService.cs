@@ -16,22 +16,27 @@ namespace Service.Crawler
     public class OneOFourCrawlerService : IOneOFourCrawlerService
     {
         private readonly IHostingEnvironment _hostingEnvironment;
-        private readonly string _dirPath;
-        private readonly string _filePath;
+        private int _userType { get; set; }
+        private string _dirPath => Path.Combine(_hostingEnvironment.ContentRootPath, "OneOFourXml");
+        private string _filePath => Path.Combine(_dirPath, $"{DateTime.Now:yyyyMMdd}_{_userType}.xml");
+        private string  _sourceUrl =>  _userType == 1 ?
+                @"https://www.104.com.tw/jobs/search/?ro=0&isnew=0&keyword=.net&jobcatExpansionType=0&area=6001001000%2C6001002000&order=15&asc=0&s9=1&s5=0&wktm=1&page={0}&mode=s&searchTempExclude=2":
+                @"https://www.104.com.tw/jobs/search/?ro=0&jobcat=2003001006%2C2003001010%2C2002001000&isnew=0&jobcatExpansionType=1&area=6001002000%2C6001001000&order=11&asc=0&sctp=M&scmin=30000&scstrict=1&scneg=0&s9=1&wktm=1&page={0}&mode=s&jobsource=2018indexpoc&searchTempExclude=2";
+            
 
         public OneOFourCrawlerService(IHostingEnvironment hostingEnvironment)
         {
             _hostingEnvironment = hostingEnvironment;
-            _dirPath = Path.Combine(_hostingEnvironment.ContentRootPath, "OneOFourXml");
-            _filePath = Path.Combine(_dirPath, $"{DateTime.Now:yyyyMMdd}.xml");
+            _userType = 1;
         }
 
         /// <summary>
         /// 取得當天已存在的xml檔案資料
         /// </summary>
         /// <returns></returns>
-        public IEnumerable<OneOFourHtmlModel> GetOneOFourLocalXmlInfo()
+        public IEnumerable<OneOFourHtmlModel> GetOneOFourLocalXmlInfo(int userType)
         {
+            _userType = userType;
             if (!Directory.Exists(_dirPath) || !File.Exists(_filePath))
                 return null;
 
@@ -54,10 +59,14 @@ namespace Service.Crawler
         /// <summary>
         /// 同步104職缺資料
         /// </summary>
-        public void SynchronizeOneOFourXml()
+        public void SynchronizeOneOFourXml(int userType)
         {
-            var strUrl = @"https://www.104.com.tw/jobs/search/?ro=0&isnew=0&keyword=.net&jobcatExpansionType=0&area=6001001000%2C6001002000&order=15&asc=0&s9=1&s5=0&wktm=1&page={0}&mode=s&searchTempExclude=2";
-            HttpWebRequest request;
+            var oldJobData = GetOneOFourLocalXmlInfo(userType);
+
+            if (oldJobData != null && oldJobData.Any() && oldJobData.Max(x => x.SynchronizeDate.Value).AddMinutes(10) > DateTime.Now)
+                return;
+
+           HttpWebRequest request;
             var page = 1;
             var requestUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.106 Safari/537.36";
             var requestAccept = "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9";
@@ -70,7 +79,7 @@ namespace Service.Crawler
             while (true)
             {
                 //爬104資料清單
-                request = (HttpWebRequest)WebRequest.Create(string.Format(strUrl, page++));
+                request = (HttpWebRequest)WebRequest.Create(string.Format(_sourceUrl, page++));
 
                 request.UserAgent = requestUserAgent;
                 request.Accept = requestAccept;
@@ -131,6 +140,9 @@ namespace Service.Crawler
                             var jobDetailJson = sr.ReadToEnd();
                             var jobData = JsonSerializer.Deserialize<JobDetailInfo>(jobDetailJson);
 
+                            if (_userType != 1)
+                                return true;
+
                             //不找內湖
                             if (jobData.data.jobDetail.addressDetail.Contains("內湖") || jobData.data.jobDetail.addressRegion.Contains("內湖"))
                                 return false;
@@ -150,9 +162,7 @@ namespace Service.Crawler
                 return true;
             });
 
-            htmlJobInfo.OneOFourHtmlJobInfos = htmlJobInfo.OneOFourHtmlJobInfos.Where(x => filterJobCondition(x));
-
-            var oldJobData = GetOneOFourLocalXmlInfo();
+            htmlJobInfo.OneOFourHtmlJobInfos = htmlJobInfo.OneOFourHtmlJobInfos.Where(x => filterJobCondition(x)).ToList();
 
             //如果沒有抓到新資料，就直接踢掉
             if (htmlJobInfo.OneOFourHtmlJobInfos == null || !htmlJobInfo.OneOFourHtmlJobInfos.Any())
@@ -167,6 +177,10 @@ namespace Service.Crawler
 
             var existJobNoList = oldJobData.SelectMany(x => x.OneOFourHtmlJobInfos.Select(y => y.No));
             htmlJobInfo.OneOFourHtmlJobInfos = htmlJobInfo.OneOFourHtmlJobInfos.Where(x => !existJobNoList.Contains(x.No));
+
+            //沒有新資料就不存
+            if (htmlJobInfo.OneOFourHtmlJobInfos == null || !htmlJobInfo.OneOFourHtmlJobInfos.Any())
+                return;
 
             var totalJobData = new List<OneOFourHtmlModel> { htmlJobInfo };
             totalJobData.AddRange(oldJobData);
@@ -198,9 +212,33 @@ namespace Service.Crawler
             newXmlDoc.Save(_filePath);
         }
 
-        public string ReadLocalData()
+        /// <summary>
+        /// 更新與存取檔案
+        /// </summary>
+        /// <param name="userType"></param>
+        /// <returns></returns>
+        public string SynAndReadData(int userType)
         {
-            return string.Empty;
+            SynchronizeOneOFourXml(userType);
+            var existData = GetOneOFourLocalXmlInfo(userType).OrderByDescending(x => x.SynchronizeDate);
+            var result = new StringBuilder("來源網址 : " + _sourceUrl);
+
+            foreach (var item in existData)
+            {
+                result.AppendLine(item.SynchronizeDate.Value.ToString("yyyy/MM/dd HH:mm:ss"));
+                foreach (var jobInfo in item.OneOFourHtmlJobInfos)
+                {
+                    result.AppendLine(jobInfo.Name);
+                    result.AppendLine(jobInfo.CompanyName);
+                    result.AppendLine($"{jobInfo.DetailLink}");
+                    result.AppendLine("");
+                }
+                result.AppendLine("-----------------------------");
+            }
+
+            return result.ToString();
         }
+
+
     }
 }
