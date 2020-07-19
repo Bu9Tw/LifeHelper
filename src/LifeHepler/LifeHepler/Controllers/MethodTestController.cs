@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Service.Crawler.Interface;
 using Service.GoogleSheet.Interface;
 
@@ -15,25 +16,36 @@ namespace LifeHepler.Controllers
     {
         private readonly IGoogleSheetService _googleSheetService;
         private readonly IOneOFourCrawlerService _oneOFourCrawlerService;
-        
+        private readonly ILogger<MethodTestController> _logger;
+
         public MethodTestController(IGoogleSheetService googleSheetService,
-            IOneOFourCrawlerService oneOFourCrawlerService)
+            IOneOFourCrawlerService oneOFourCrawlerService,
+            ILogger<MethodTestController> logger)
         {
             _googleSheetService = googleSheetService;
             _oneOFourCrawlerService = oneOFourCrawlerService;
+            _logger = logger;
+        }
+
+        [HttpGet("logger")]
+        public void GetLogger()
+        {
+            return;
+            _logger.LogInformation(new Exception("123"),"QQ");
         }
 
         [HttpGet("OneOFour")]
-        public string OneOFour()
+        public void OneOFour()
         {
+            return;
             _oneOFourCrawlerService.SynchronizeOneOFourXml();
-            return "";
+            return;
         }
 
         [HttpGet("WriteGoogleSheet")]
-        public string WriteGoogleSheet()
+        public void WriteGoogleSheet()
         {
-            return "";
+            return;
             var twToday = DateTime.Now.AddHours(8);
 
             var WorkSheetData1 = new List<IList<object>>
@@ -109,7 +121,7 @@ namespace LifeHepler.Controllers
 
             _googleSheetService.WriteValue("Test!F8:I11", WorkSheetData1);
 
-            return "";
+            return;
         }
     }
 }
