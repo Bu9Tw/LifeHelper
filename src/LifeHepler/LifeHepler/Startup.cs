@@ -54,6 +54,9 @@ namespace LifeHepler
                 app.UseDeveloperExceptionPage();
             }
 
+            app.UseDefaultFiles();
+            app.UseStaticFiles();
+
             app.UseHttpsRedirection();
 
             app.UseRouting();
@@ -63,6 +66,20 @@ namespace LifeHepler
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
+            });
+
+            app.Use(async (context, next) =>
+            {
+                await next();
+
+                if(context.Response.StatusCode == 404 &&
+                !System.IO.Path.HasExtension(context.Request.Path.Value)&&
+                !context.Request.Path.Value.StartsWith("/api"))
+                {
+                    context.Request.Path = "/index.html";
+                    context.Response.StatusCode = 200;
+                    await next();
+                }
             });
         }
     }
