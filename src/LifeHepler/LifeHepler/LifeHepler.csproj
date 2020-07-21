@@ -32,5 +32,9 @@
     </None>
   </ItemGroup>
 
+  <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
+    <Exec Command="cd ClientApp&#xD;&#xA;npm run build" />
+  </Target>
+
 
 </Project>
