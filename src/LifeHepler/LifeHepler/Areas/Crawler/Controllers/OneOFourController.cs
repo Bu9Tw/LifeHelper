@@ -1,5 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Model.Crawler;
 using Service.Crawler.Interface;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace LifeHepler.Areas.Crawler.Controllers
 {
@@ -14,16 +17,27 @@ namespace LifeHepler.Areas.Crawler.Controllers
             _oneOFourCrawlerService = oneOFourCrawlerService;
         }
 
-        [HttpGet("GetJobInfo")]
-        public string GetOneOFourXml()
+        private IEnumerable<object> SynAndReadData(int type)
         {
-            return _oneOFourCrawlerService.SynAndReadData(1);
+            var result = _oneOFourCrawlerService.SynAndReadData(type).Select(x => new
+            {
+                SynchronizeDate = x.SynchronizeDate.Value.ToString("yyyy-MM-dd HH:mm:ss"),
+                x.OneOFourHtmlJobInfos
+            });
+
+            return result;
+        }
+
+        [HttpGet("GetJobInfo")]
+        public IEnumerable<object> GetOneOFourXml(int type)
+        {
+            return SynAndReadData(type);
         }
 
         [HttpGet("GetJobInfoForChien")]
-        public string GetOneOFourXml_2()
+        public IEnumerable<object> GetOneOFourXml_2()
         {
-            return _oneOFourCrawlerService.SynAndReadData(2);
+            return SynAndReadData(2);
         }
     }
 }

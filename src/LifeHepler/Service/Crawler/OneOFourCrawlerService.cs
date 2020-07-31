@@ -9,6 +9,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Xml.Linq;
 
 namespace Service.Crawler
@@ -203,13 +204,27 @@ namespace Service.Crawler
                                                 new XElement("SynchronizeDate", x.SynchronizeDate.Value.ToString("yyyy/MM/dd HH:mm:ss")),
                                                 x.OneOFourHtmlJobInfos.Select(y =>
                                                 new XElement("Job",
-                                                    new XElement("No", y.No),
-                                                    new XElement("Name", y.Name),
-                                                    new XElement("CompanyNo", y.CompanyNo),
-                                                    new XElement("CompanyName", y.CompanyName),
-                                                    new XElement("DetailLink", y.DetailLink)))))));
+                                                    new XElement("No", ReplaceHexadecimalSymbols(y.No)),
+                                                    new XElement("Name", ReplaceHexadecimalSymbols(y.Name)),
+                                                    new XElement("CompanyNo", ReplaceHexadecimalSymbols(y.CompanyNo)),
+                                                    new XElement("CompanyName", ReplaceHexadecimalSymbols(y.CompanyName)),
+                                                    new XElement("DetailLink", ReplaceHexadecimalSymbols(y.DetailLink))))))));
 
             newXmlDoc.Save(_filePath);
+        }
+
+        private string ReplaceHexadecimalSymbols(string txt)
+        {
+            if (txt != "")
+            {
+                string r = "[\x00-\x08\x0B\x0C\x0E-\x1F]";
+                return Regex.Replace(txt, r, "", RegexOptions.Compiled);
+            }
+            else
+            {
+                return "";
+            }
+
         }
 
         /// <summary>
@@ -217,27 +232,11 @@ namespace Service.Crawler
         /// </summary>
         /// <param name="userType"></param>
         /// <returns></returns>
-        public string SynAndReadData(int userType)
+        public IEnumerable<OneOFourHtmlModel> SynAndReadData(int userType)
         {
             SynchronizeOneOFourXml(userType);
-            var existData = GetOneOFourLocalXmlInfo(userType).OrderByDescending(x => x.SynchronizeDate);
-            var result = new StringBuilder();
-            result.AppendLine("來源網址 : " + _sourceUrl);
-            result.AppendLine(string.Empty);
-            foreach (var item in existData)
-            {
-                result.AppendLine("時間 : " + item.SynchronizeDate.Value.ToString("yyyy/MM/dd HH:mm:ss"));
-                foreach (var jobInfo in item.OneOFourHtmlJobInfos)
-                {
-                    result.AppendLine(jobInfo.Name);
-                    result.AppendLine(jobInfo.CompanyName);
-                    result.AppendLine($"{jobInfo.DetailLink}");
-                    result.AppendLine(string.Empty);
-                }
-                result.AppendLine("-----------------------------");
-            }
 
-            return result.ToString();
+            return GetOneOFourLocalXmlInfo(userType).OrderByDescending(x => x.SynchronizeDate);
         }
 
 
