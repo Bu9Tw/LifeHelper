@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using HeplerLibs.ExtLib;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -46,7 +47,7 @@ namespace LifeHepler.Controllers
         public void WriteGoogleSheet()
         {
             return;
-            var twToday = DateTime.Now.AddHours(8);
+            var twToday = GetTime.TwNow;//DateTime.Now.AddHours(8);
 
             var WorkSheetData1 = new List<IList<object>>
             {

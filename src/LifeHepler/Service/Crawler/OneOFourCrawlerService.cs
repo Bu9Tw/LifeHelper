@@ -1,4 +1,5 @@
-﻿using HtmlAgilityPack;
+﻿using HeplerLibs.ExtLib;
+using HtmlAgilityPack;
 using Microsoft.AspNetCore.Hosting;
 using Model.Crawler;
 using Service.Crawler.Interface;
@@ -10,6 +11,7 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Xml.Linq;
 
 namespace Service.Crawler
@@ -19,10 +21,10 @@ namespace Service.Crawler
         private readonly IHostingEnvironment _hostingEnvironment;
         private int _userType { get; set; }
         private string _dirPath => Path.Combine(_hostingEnvironment.ContentRootPath, "OneOFourXml");
-        private string _filePath => Path.Combine(_dirPath, $"{DateTime.Now:yyyyMMdd}_{_userType}.xml");
+        private string _filePath => Path.Combine(_dirPath, $"{GetTime.TwNow:yyyyMMdd}_{_userType}.xml");
         private string _sourceUrl => _userType == 1 ?
                 @"https://www.104.com.tw/jobs/search/?ro=0&isnew=0&keyword=.net&jobcatExpansionType=0&area=6001001000%2C6001002000&order=15&asc=0&s9=1&s5=0&wktm=1&page={0}&mode=s&searchTempExclude=2" :
-                @"https://www.104.com.tw/jobs/search/?ro=0&jobcat=2003001006%2C2003001010%2C2002001000&isnew=0&jobcatExpansionType=1&area=6001001003%2C6001002003%2C6001002015%2C6001002021%2C6001002018%2C6001002020&order=11&asc=0&sctp=M&scmin=30000&scstrict=1&scneg=0&s9=1&wktm=1&page=1&mode=s&jobsource=2018indexpoc&searchTempExclude=2";
+                @"https://www.104.com.tw/jobs/search/?ro=0&jobcat=2003001006%2C2003001010%2C2002001000&isnew=0&jobcatExpansionType=1&area=6001001003%2C6001002003%2C6001002015%2C6001002021%2C6001002018%2C6001002020&order=11&asc=0&sctp=M&scmin=30000&scstrict=1&scneg=0&s9=1&wktm=1&page={0}&mode=s&searchTempExclude=2";
 
 
         public OneOFourCrawlerService(IHostingEnvironment hostingEnvironment)
@@ -64,21 +66,22 @@ namespace Service.Crawler
         {
             var oldJobData = GetOneOFourLocalXmlInfo(userType);
 
-            if (oldJobData != null && oldJobData.Any() && oldJobData.Max(x => x.SynchronizeDate.Value).AddMinutes(10) > DateTime.Now)
+            if (oldJobData != null && oldJobData.Any() && oldJobData.Max(x => x.SynchronizeDate.Value).AddMinutes(10) > GetTime.TwNow)
                 return;
 
             HttpWebRequest request;
             var page = 1;
-            var requestUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.106 Safari/537.36";
+            var requestUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.105 Safari/537.36";
             var requestAccept = "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9";
             var htmlJobInfo = new OneOFourHtmlModel
             {
-                SynchronizeDate = DateTime.Now,
+                SynchronizeDate = GetTime.TwNow,
                 OneOFourHtmlJobInfos = new List<OneOFourHtmlModel.OneOFourHtmlJobInfo>()
             };
 
             while (true)
             {
+                Thread.Sleep(100);
                 //爬104資料清單
                 request = (HttpWebRequest)WebRequest.Create(string.Format(_sourceUrl, page++));
 
@@ -118,6 +121,7 @@ namespace Service.Crawler
             //判斷詳細工作資訊的condition
             var filterJobCondition = new Func<OneOFourHtmlModel.OneOFourHtmlJobInfo, bool>((x) =>
             {
+                Thread.Sleep(100);
                 //取得該工作的網址編號
                 var jobUrlKey = new Uri(x.DetailLink).AbsolutePath.Trim('/').Split('/').LastOrDefault();
 

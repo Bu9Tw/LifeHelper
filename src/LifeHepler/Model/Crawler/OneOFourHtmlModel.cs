@@ -11,14 +11,20 @@ namespace Model.Crawler
 
         public OneOFourHtmlModel(HtmlNodeCollection sourceJobHtml)
         {
-            OneOFourHtmlJobInfos = sourceJobHtml.Select(x => new OneOFourHtmlJobInfo
+            OneOFourHtmlJobInfos = sourceJobHtml.Select(x => 
             {
-                No = x.GetAttributeValue("data-job-no", ""),
-                Name = x.GetAttributeValue("data-job-name", ""),
-                CompanyNo = x.GetAttributeValue("data-cust-no", ""),
-                CompanyName = x.GetAttributeValue("data-cust-name", ""),
-                DetailLink = @"https:" + x.SelectSingleNode("div[1]/h2/a").GetAttributeValue("href", "")
-            });
+                var data = new OneOFourHtmlJobInfo
+                {
+                    No = x.GetAttributeValue("data-job-no", ""),
+                    Name = x.GetAttributeValue("data-job-name", ""),
+                    CompanyNo = x.GetAttributeValue("data-cust-no", ""),
+                    CompanyName = x.GetAttributeValue("data-cust-name", ""),
+                };
+                if (string.IsNullOrEmpty(data.No))
+                    return null;
+                data.DetailLink = @"https:" + x.SelectSingleNode("div[1]/h2/a").GetAttributeValue("href", "");
+                return data;
+            }).Where(x=>x!=null).ToList();
         }
 
         public DateTime? SynchronizeDate { get; set; }

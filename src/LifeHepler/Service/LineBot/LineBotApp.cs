@@ -1,4 +1,5 @@
-﻿using Line.Messaging;
+﻿using HeplerLibs.ExtLib;
+using Line.Messaging;
 using Line.Messaging.Webhooks;
 using Model.GoogleSheet;
 using Service.GoogleSheet.Interface;
@@ -41,7 +42,7 @@ namespace Service.LineBot
                         //切開分隔，然後只篩不為空白的
                         var textSplitData = textMessage.Text.Split('\n').Where(x => !string.IsNullOrEmpty(x)).ToList<object>();
                         var WorkSheetData = new List<IList<object>>();
-                        var twToday = DateTime.Now.AddHours(8);
+                        var twToday = GetTime.TwNow;
 
                         if (textSplitData.Count > 4)
                             result.Add(new TextMessage("格式錯誤 ! "));
