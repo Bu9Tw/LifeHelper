@@ -6,9 +6,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="ClientApp\**" />
     <Compile Remove="wwwroot\**" />
+    <Content Remove="ClientApp\**" />
     <Content Remove="wwwroot\**" />
+    <EmbeddedResource Remove="ClientApp\**" />
     <EmbeddedResource Remove="wwwroot\**" />
+    <None Remove="ClientApp\**" />
     <None Remove="wwwroot\**" />
   </ItemGroup>
 

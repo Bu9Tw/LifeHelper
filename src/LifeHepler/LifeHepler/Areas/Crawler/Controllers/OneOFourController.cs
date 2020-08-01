@@ -33,11 +33,5 @@ namespace LifeHepler.Areas.Crawler.Controllers
         {
             return SynAndReadData(type);
         }
-
-        [HttpGet("GetJobInfoForChien")]
-        public IEnumerable<object> GetOneOFourXml_2()
-        {
-            return SynAndReadData(2);
-        }
     }
 }
