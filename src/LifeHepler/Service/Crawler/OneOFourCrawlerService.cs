@@ -21,7 +21,7 @@ namespace Service.Crawler
         private string _filePath => Path.Combine(_dirPath, $"{DateTime.Now:yyyyMMdd}_{_userType}.xml");
         private string _sourceUrl => _userType == 1 ?
                 @"https://www.104.com.tw/jobs/search/?ro=0&isnew=0&keyword=.net&jobcatExpansionType=0&area=6001001000%2C6001002000&order=15&asc=0&s9=1&s5=0&wktm=1&page={0}&mode=s&searchTempExclude=2" :
-                @"https://www.104.com.tw/jobs/search/?ro=0&jobcat=2003001006%2C2003001010%2C2002001000&isnew=0&jobcatExpansionType=1&area=6001002000%2C6001001000&order=11&asc=0&sctp=M&scmin=30000&scstrict=1&scneg=0&s9=1&wktm=1&page={0}&mode=s&jobsource=2018indexpoc&searchTempExclude=2";
+                @"https://www.104.com.tw/jobs/search/?ro=0&jobcat=2003001006%2C2003001010%2C2002001000&isnew=0&jobcatExpansionType=1&area=6001001003%2C6001002003%2C6001002015%2C6001002021%2C6001002018%2C6001002020&order=11&asc=0&sctp=M&scmin=30000&scstrict=1&scneg=0&s9=1&wktm=1&page=1&mode=s&jobsource=2018indexpoc&searchTempExclude=2";
 
 
         public OneOFourCrawlerService(IHostingEnvironment hostingEnvironment)
