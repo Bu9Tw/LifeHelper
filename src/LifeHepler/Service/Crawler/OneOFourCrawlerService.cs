@@ -148,9 +148,9 @@ namespace Service.Crawler
                             if (_userType != 1)
                                 return true;
 
-                            //不找內湖
-                            if (jobData.data.jobDetail.addressDetail.Contains("內湖") || jobData.data.jobDetail.addressRegion.Contains("內湖"))
-                                return false;
+                            ////不找內湖
+                            //if (jobData.data.jobDetail.addressDetail.Contains("內湖") || jobData.data.jobDetail.addressRegion.Contains("內湖"))
+                            //    return false;
                             //工作標題有沒有net
                             if (!jobData.data.header.jobName.ToLower().Contains("net") &&
                                 //工作內容有沒有net
