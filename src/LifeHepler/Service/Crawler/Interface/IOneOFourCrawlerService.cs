@@ -9,7 +9,7 @@ namespace Service.Crawler.Interface
         /// 更新與存取檔案
         /// </summary>
         /// <returns></returns>
-        public string SynAndReadData(int userType);
+        public IEnumerable<OneOFourHtmlModel> SynAndReadData(int userType);
 
         /// <summary>
         /// 同步104職缺資料
