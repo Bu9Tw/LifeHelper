@@ -34,7 +34,7 @@ namespace LifeHepler
             services.AddControllers();
             services.AddHttpContextAccessor();
             services.Configure<LineBotSecretKeyModel>(Configuration.GetSection("LineBot"));
-            services.Configure<GoogleSheetCredential>(Configuration.GetSection("installed"));
+            services.Configure<GoogleSheetCredential>(Configuration.GetSection("GoogleSheetCredential"));
             services.Configure<GoogleSheetModel>(Configuration.GetSection("GoogleSheet"));
             services.AddScoped<IGoogleSheetService, GoogleSheetService>();
             services.AddScoped<IOneOFourCrawlerService, OneOFourCrawlerService>();
