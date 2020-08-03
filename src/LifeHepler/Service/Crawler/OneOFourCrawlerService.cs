@@ -1,6 +1,7 @@
 ﻿using HeplerLibs.ExtLib;
 using HtmlAgilityPack;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Options;
 using Model.Crawler;
 using Service.Crawler.Interface;
 using System;
@@ -19,17 +20,20 @@ namespace Service.Crawler
     public class OneOFourCrawlerService : IOneOFourCrawlerService
     {
         private readonly IHostingEnvironment _hostingEnvironment;
+        private readonly OneOFourJobInfoSourceUrlModel _oneOFourJobInfoSourceUrl;
         private int _userType { get; set; }
         private string _dirPath => Path.Combine(_hostingEnvironment.ContentRootPath, "OneOFourXml");
         private string _filePath => Path.Combine(_dirPath, $"{GetTime.TwNow:yyyyMMdd}_{_userType}.xml");
-        private string _sourceUrl => _userType == 1 ?
-                @"https://www.104.com.tw/jobs/search/?ro=0&isnew=0&keyword=.net&jobcatExpansionType=0&area=6001001000%2C6001002000&order=15&asc=0&s9=1&s5=0&wktm=1&page={0}&mode=s&searchTempExclude=2" :
-                @"https://www.104.com.tw/jobs/search/?ro=0&jobcat=2003001006%2C2003001010%2C2002001000&isnew=0&jobcatExpansionType=1&area=6001001003%2C6001002003%2C6001002015%2C6001002021%2C6001002018%2C6001002020&order=11&asc=0&sctp=M&scmin=30000&scstrict=1&scneg=0&s9=1&wktm=1&page={0}&mode=s&searchTempExclude=2";
+        private string _sourceUrl => (_userType == 1 ?
+                _oneOFourJobInfoSourceUrl.Bo :
+                _oneOFourJobInfoSourceUrl.Chien).Replace("page=1", "page={0}");
 
 
-        public OneOFourCrawlerService(IHostingEnvironment hostingEnvironment)
+        public OneOFourCrawlerService(IHostingEnvironment hostingEnvironment,
+            IOptions<OneOFourJobInfoSourceUrlModel> oneOFourJobInfoSourceUrl)
         {
             _hostingEnvironment = hostingEnvironment;
+            _oneOFourJobInfoSourceUrl = oneOFourJobInfoSourceUrl.Value;
             _userType = 1;
         }
 
@@ -55,6 +59,9 @@ namespace Service.Crawler
                     CompanyNo = y.Element("CompanyNo").Value,
                     CompanyName = y.Element("CompanyName").Value,
                     DetailLink = y.Element("DetailLink").Value,
+                    Pay = y.Element("Pay").Value,
+                    WorkPlace = y.Element("WorkPlace").Value,
+                    WorkTime = y.Element("WorkTime").Value
                 })
             });
         }
@@ -82,8 +89,9 @@ namespace Service.Crawler
             while (true)
             {
                 Thread.Sleep(100);
+                var url = string.Format(_sourceUrl, page++);
                 //爬104資料清單
-                request = (HttpWebRequest)WebRequest.Create(string.Format(_sourceUrl, page++));
+                request = (HttpWebRequest)WebRequest.Create(url);
 
                 request.UserAgent = requestUserAgent;
                 request.Accept = requestAccept;
@@ -119,14 +127,14 @@ namespace Service.Crawler
             var baseUrl = @"https://www.104.com.tw/job/ajax/content/{0}";
 
             //判斷詳細工作資訊的condition
-            var filterJobCondition = new Func<OneOFourHtmlModel.OneOFourHtmlJobInfo, bool>((x) =>
+            var filterJobCondition = new Func<OneOFourHtmlModel.OneOFourHtmlJobInfo, OneOFourHtmlModel.OneOFourHtmlJobInfo>((x) =>
             {
                 Thread.Sleep(100);
                 //取得該工作的網址編號
                 var jobUrlKey = new Uri(x.DetailLink).AbsolutePath.Trim('/').Split('/').LastOrDefault();
 
                 if (jobUrlKey == null)
-                    return false;
+                    return null;
 
                 var ajaxUrl = string.Format(baseUrl, jobUrlKey);
 
@@ -145,8 +153,12 @@ namespace Service.Crawler
                             var jobDetailJson = sr.ReadToEnd();
                             var jobData = JsonSerializer.Deserialize<JobDetailInfo>(jobDetailJson);
 
+                            x.Pay = jobData.data.jobDetail.salary;
+                            x.WorkPlace = jobData.data.jobDetail.addressRegion + jobData.data.jobDetail.addressDetail;
+                            x.WorkTime = jobData.data.jobDetail.workPeriod;
+
                             if (_userType != 1)
-                                return true;
+                                return x;
 
                             ////不找內湖
                             //if (jobData.data.jobDetail.addressDetail.Contains("內湖") || jobData.data.jobDetail.addressRegion.Contains("內湖"))
@@ -158,16 +170,19 @@ namespace Service.Crawler
                                 //需要的技能有沒有net
                                 (!jobData.data.condition.specialty.Any() ||
                                 !jobData.data.condition.specialty.Any(x => x.description.ToLower().Contains("net"))))
-                                return false;
+                                return null;
 
-                            return true;
+                            return x;
                         }
                     }
                 }
-                return true;
+                return x;
             });
 
-            htmlJobInfo.OneOFourHtmlJobInfos = htmlJobInfo.OneOFourHtmlJobInfos.Where(x => filterJobCondition(x)).ToList();
+            htmlJobInfo.OneOFourHtmlJobInfos = htmlJobInfo.OneOFourHtmlJobInfos
+                .Select(x => filterJobCondition(x))
+                .Where(x => x != null)
+                .ToList();
 
             //如果沒有抓到新資料，就直接踢掉
             if (htmlJobInfo.OneOFourHtmlJobInfos == null || !htmlJobInfo.OneOFourHtmlJobInfos.Any())
@@ -212,7 +227,11 @@ namespace Service.Crawler
                                                     new XElement("Name", ReplaceHexadecimalSymbols(y.Name)),
                                                     new XElement("CompanyNo", ReplaceHexadecimalSymbols(y.CompanyNo)),
                                                     new XElement("CompanyName", ReplaceHexadecimalSymbols(y.CompanyName)),
-                                                    new XElement("DetailLink", ReplaceHexadecimalSymbols(y.DetailLink))))))));
+                                                    new XElement("DetailLink", ReplaceHexadecimalSymbols(y.DetailLink)),
+                                                    new XElement("Pay", ReplaceHexadecimalSymbols(y.Pay)),
+                                                    new XElement("WorkPlace", ReplaceHexadecimalSymbols(y.WorkPlace)),
+                                                    new XElement("WorkTime", ReplaceHexadecimalSymbols(y.WorkTime))
+                                                    ))))));
 
             newXmlDoc.Save(_filePath);
         }

@@ -57,6 +57,21 @@ namespace Model.Crawler
             /// 職缺詳細內容網址
             /// </summary>
             public string DetailLink { get; set; }
+
+            /// <summary>
+            /// 工作待遇
+            /// </summary>
+            public string Pay { get; set; }
+
+            /// <summary>
+            /// 工作地點
+            /// </summary>
+            public string WorkPlace { get; set; }
+
+            /// <summary>
+            /// 上邊時間
+            /// </summary>
+            public string WorkTime { get; set; }
         }
     }
 

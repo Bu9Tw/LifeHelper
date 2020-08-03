@@ -10,6 +10,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Model.Crawler;
 using Model.GoogleSheet;
 using Model.LineBot;
 using Service.Crawler;
@@ -27,7 +28,7 @@ namespace LifeHepler
         }
 
         public IConfiguration Configuration { get; }
-
+        
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
@@ -36,6 +37,7 @@ namespace LifeHepler
             services.Configure<LineBotSecretKeyModel>(Configuration.GetSection("LineBot"));
             services.Configure<GoogleSheetCredential>(Configuration.GetSection("GoogleSheetCredential"));
             services.Configure<GoogleSheetModel>(Configuration.GetSection("GoogleSheet"));
+            services.Configure<OneOFourJobInfoSourceUrlModel>(Configuration.GetSection("OneOFourJobInfoSourceUrl"));
             services.AddScoped<IGoogleSheetService, GoogleSheetService>();
             services.AddScoped<IOneOFourCrawlerService, OneOFourCrawlerService>();
             //每次Call Method都注入一個新的

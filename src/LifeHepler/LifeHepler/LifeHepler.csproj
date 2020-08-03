@@ -35,6 +35,7 @@
     <Folder Include="Areas\Crawler\Data\" />
     <Folder Include="Areas\Crawler\Models\" />
     <Folder Include="Areas\Crawler\Views\" />
+    <Folder Include="OneOFourXml\" />
   </ItemGroup>
 
   <ItemGroup>
