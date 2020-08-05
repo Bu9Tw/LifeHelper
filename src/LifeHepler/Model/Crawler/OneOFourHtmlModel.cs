@@ -72,6 +72,8 @@ namespace Model.Crawler
             /// 上邊時間
             /// </summary>
             public string WorkTime { get; set; }
+
+            public bool IsShow { get; set; }
         }
     }
 
