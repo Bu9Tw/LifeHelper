@@ -61,7 +61,8 @@ namespace Service.Crawler
                     DetailLink = y.Element("DetailLink").Value,
                     Pay = y.Element("Pay").Value,
                     WorkPlace = y.Element("WorkPlace").Value,
-                    WorkTime = y.Element("WorkTime").Value
+                    WorkTime = y.Element("WorkTime").Value,
+                    IsShow = y.Element("IsShow").Value.Ext_IsTrue()
                 })
             });
         }
@@ -73,7 +74,7 @@ namespace Service.Crawler
         {
             var oldJobData = GetOneOFourLocalXmlInfo(userType);
 
-            if (oldJobData != null && oldJobData.Any() && oldJobData.Max(x => x.SynchronizeDate.Value).AddMinutes(10) > GetTime.TwNow)
+            if (!oldJobData.Ext_IsNullOrEmpty() && oldJobData.Any() && oldJobData.Max(x => x.SynchronizeDate.Value).AddMinutes(10) > GetTime.TwNow)
                 return;
 
             HttpWebRequest request;
@@ -133,7 +134,7 @@ namespace Service.Crawler
                 //取得該工作的網址編號
                 var jobUrlKey = new Uri(x.DetailLink).AbsolutePath.Trim('/').Split('/').LastOrDefault();
 
-                if (jobUrlKey == null)
+                if (jobUrlKey.Ext_IsNullOrEmpty())
                     return null;
 
                 var ajaxUrl = string.Format(baseUrl, jobUrlKey);
@@ -148,6 +149,7 @@ namespace Service.Crawler
                     HttpStatusCode code = response.StatusCode;
                     if (code == HttpStatusCode.OK)
                     {
+                        x.IsShow = true;
                         using (var sr = new StreamReader(response.GetResponseStream(), Encoding.UTF8))
                         {
                             var jobDetailJson = sr.ReadToEnd();
@@ -170,7 +172,10 @@ namespace Service.Crawler
                                 //需要的技能有沒有net
                                 (!jobData.data.condition.specialty.Any() ||
                                 !jobData.data.condition.specialty.Any(x => x.description.ToLower().Contains("net"))))
-                                return null;
+                            {
+                                x.IsShow = false;
+                                return x;
+                            }
 
                             return x;
                         }
@@ -179,27 +184,31 @@ namespace Service.Crawler
                 return x;
             });
 
+            var existJobNoList = oldJobData.Ext_IsNullOrEmpty() ?
+                new List<string>() :
+                oldJobData.SelectMany(x => x.OneOFourHtmlJobInfos.Select(y => y.No)).ToList();
+
             htmlJobInfo.OneOFourHtmlJobInfos = htmlJobInfo.OneOFourHtmlJobInfos
+                .Where(x => !existJobNoList.Contains(x.No))
                 .Select(x => filterJobCondition(x))
                 .Where(x => x != null)
                 .ToList();
 
             //如果沒有抓到新資料，就直接踢掉
-            if (htmlJobInfo.OneOFourHtmlJobInfos == null || !htmlJobInfo.OneOFourHtmlJobInfos.Any())
+            if (htmlJobInfo.OneOFourHtmlJobInfos.Ext_IsNullOrEmpty() || !htmlJobInfo.OneOFourHtmlJobInfos.Any())
                 return;
 
             //如果沒有舊資料，就直接存不與新資料比較
-            if (oldJobData == null)
+            if (oldJobData.Ext_IsNullOrEmpty())
             {
                 SaveJobDataToLocal(new List<OneOFourHtmlModel> { htmlJobInfo });
                 return;
             }
 
-            var existJobNoList = oldJobData.SelectMany(x => x.OneOFourHtmlJobInfos.Select(y => y.No));
             htmlJobInfo.OneOFourHtmlJobInfos = htmlJobInfo.OneOFourHtmlJobInfos.Where(x => !existJobNoList.Contains(x.No));
 
             //沒有新資料就不存
-            if (htmlJobInfo.OneOFourHtmlJobInfos == null || !htmlJobInfo.OneOFourHtmlJobInfos.Any())
+            if (htmlJobInfo.OneOFourHtmlJobInfos.Ext_IsNullOrEmpty() || !htmlJobInfo.OneOFourHtmlJobInfos.Any())
                 return;
 
             var totalJobData = new List<OneOFourHtmlModel> { htmlJobInfo };
@@ -230,7 +239,8 @@ namespace Service.Crawler
                                                     new XElement("DetailLink", ReplaceHexadecimalSymbols(y.DetailLink)),
                                                     new XElement("Pay", ReplaceHexadecimalSymbols(y.Pay)),
                                                     new XElement("WorkPlace", ReplaceHexadecimalSymbols(y.WorkPlace)),
-                                                    new XElement("WorkTime", ReplaceHexadecimalSymbols(y.WorkTime))
+                                                    new XElement("WorkTime", ReplaceHexadecimalSymbols(y.WorkTime)),
+                                                    new XElement("IsShow", ReplaceHexadecimalSymbols(y.IsShow.ToString()))
                                                     ))))));
 
             newXmlDoc.Save(_filePath);
