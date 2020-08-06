@@ -63,7 +63,7 @@ namespace Service.Crawler
                     WorkPlace = y.Element("WorkPlace").Value,
                     WorkTime = y.Element("WorkTime").Value,
                     IsShow = y.Element("IsShow").Value.Ext_IsTrue()
-                })
+                }).Where(x=>x.IsShow)
             });
         }
 
