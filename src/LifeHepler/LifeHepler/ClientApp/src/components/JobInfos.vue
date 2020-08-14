@@ -43,12 +43,8 @@ export default {
       searchParams.has("type") ? searchParams.get("type") : "1"
     }`;
     Vue.axios.get(url).then((response) => {
-      this.jobInfoDatas = [];
       this.sourceUrl = response.data.sourceUrl;
-      $.each(response.data.jobData, (jobInfosIndex, jobInfos) => {
-        this.jobInfoDatas.push(jobInfos);
-      });
-      console.log(this.jobInfoDatas);
+      this.jobInfoDatas = response.data.jobData;
     });
   },
 };

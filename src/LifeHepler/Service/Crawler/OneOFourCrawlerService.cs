@@ -51,7 +51,7 @@ namespace Service.Crawler
         {
             var filePath = GetFilePath(userType);
             if (!Directory.Exists(_dirPath) || !File.Exists(filePath))
-                return null;
+                return new List<OneOFourHtmlModel>();
 
             var oldXmlDoc = XDocument.Load(filePath);
 
