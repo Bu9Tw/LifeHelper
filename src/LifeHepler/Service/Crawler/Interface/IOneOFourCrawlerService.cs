@@ -22,5 +22,12 @@ namespace Service.Crawler.Interface
         /// <returns></returns>
         public IEnumerable<OneOFourHtmlModel> GetOneOFourLocalXmlInfo(int userType);
 
+        /// <summary>
+        /// 取得來源URL
+        /// </summary>
+        /// <param name="userType">Type of the user.</param>
+        /// <returns></returns>
+        public string GetSourceUrl(int userType);
+
     }
 }

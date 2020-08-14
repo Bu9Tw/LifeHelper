@@ -21,12 +21,7 @@ namespace Service.Crawler
     {
         private readonly IHostingEnvironment _hostingEnvironment;
         private readonly OneOFourJobInfoSourceUrlModel _oneOFourJobInfoSourceUrl;
-        private int _userType { get; set; }
         private string _dirPath => Path.Combine(_hostingEnvironment.ContentRootPath, "OneOFourXml");
-        private string _filePath => Path.Combine(_dirPath, $"{GetTime.TwNow:yyyyMMdd}_{_userType}.xml");
-        private string _sourceUrl => (_userType == 1 ?
-                _oneOFourJobInfoSourceUrl.Bo :
-                _oneOFourJobInfoSourceUrl.Chien).Replace("page=1", "page={0}");
 
 
         public OneOFourCrawlerService(IHostingEnvironment hostingEnvironment,
@@ -34,7 +29,18 @@ namespace Service.Crawler
         {
             _hostingEnvironment = hostingEnvironment;
             _oneOFourJobInfoSourceUrl = oneOFourJobInfoSourceUrl.Value;
-            _userType = 1;
+        }
+
+        private string GetFilePath(int userType)
+        {
+            return Path.Combine(_dirPath, $"{GetTime.TwNow:yyyyMMdd}_{userType}.xml");
+        }
+
+        public string GetSourceUrl(int userType)
+        {
+            return (userType == 1 ?
+                _oneOFourJobInfoSourceUrl.Bo :
+                _oneOFourJobInfoSourceUrl.Chien).Replace("page=1", "page={0}");
         }
 
         /// <summary>
@@ -43,11 +49,11 @@ namespace Service.Crawler
         /// <returns></returns>
         public IEnumerable<OneOFourHtmlModel> GetOneOFourLocalXmlInfo(int userType)
         {
-            _userType = userType;
-            if (!Directory.Exists(_dirPath) || !File.Exists(_filePath))
+            var filePath = GetFilePath(userType);
+            if (!Directory.Exists(_dirPath) || !File.Exists(filePath))
                 return null;
 
-            var oldXmlDoc = XDocument.Load(_filePath);
+            var oldXmlDoc = XDocument.Load(filePath);
 
             return oldXmlDoc.Element("Data").Elements("Block").Select(x => new OneOFourHtmlModel
             {
@@ -89,8 +95,7 @@ namespace Service.Crawler
 
             while (true)
             {
-                Thread.Sleep(100);
-                var url = string.Format(_sourceUrl, page++);
+                var url = string.Format(GetSourceUrl(userType), page++);
                 //爬104資料清單
                 request = (HttpWebRequest)WebRequest.Create(url);
 
@@ -130,7 +135,6 @@ namespace Service.Crawler
             //判斷詳細工作資訊的condition
             var filterJobCondition = new Func<OneOFourHtmlModel.OneOFourHtmlJobInfo, OneOFourHtmlModel.OneOFourHtmlJobInfo>((x) =>
             {
-                Thread.Sleep(100);
                 //取得該工作的網址編號
                 var jobUrlKey = new Uri(x.DetailLink).AbsolutePath.Trim('/').Split('/').LastOrDefault();
 
@@ -159,7 +163,7 @@ namespace Service.Crawler
                             x.WorkPlace = jobData.data.jobDetail.addressRegion + jobData.data.jobDetail.addressDetail;
                             x.WorkTime = jobData.data.jobDetail.workPeriod;
 
-                            if (_userType != 1)
+                            if (userType != 1)
                                 return x;
 
                             ////不找內湖
@@ -201,7 +205,7 @@ namespace Service.Crawler
             //如果沒有舊資料，就直接存不與新資料比較
             if (oldJobData.Ext_IsNullOrEmpty())
             {
-                SaveJobDataToLocal(new List<OneOFourHtmlModel> { htmlJobInfo });
+                SaveJobDataToLocal(new List<OneOFourHtmlModel> { htmlJobInfo }, userType);
                 return;
             }
 
@@ -214,14 +218,14 @@ namespace Service.Crawler
             var totalJobData = new List<OneOFourHtmlModel> { htmlJobInfo };
             totalJobData.AddRange(oldJobData);
 
-            SaveJobDataToLocal(totalJobData.OrderByDescending(x => x.SynchronizeDate));
+            SaveJobDataToLocal(totalJobData.OrderByDescending(x => x.SynchronizeDate), userType);
         }
 
         /// <summary>
         /// 將資料存到Local
         /// </summary>
         /// <param name="jobData">The job data.</param>
-        private void SaveJobDataToLocal(IEnumerable<OneOFourHtmlModel> jobData)
+        private void SaveJobDataToLocal(IEnumerable<OneOFourHtmlModel> jobData,int userType)
         {
 
             if (!Directory.Exists(_dirPath))
@@ -243,7 +247,7 @@ namespace Service.Crawler
                                                     new XElement("IsShow", ReplaceHexadecimalSymbols(y.IsShow.ToString()))
                                                     ))))));
 
-            newXmlDoc.Save(_filePath);
+            newXmlDoc.Save(GetFilePath(userType));
         }
 
         private string ReplaceHexadecimalSymbols(string txt)

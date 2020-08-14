@@ -1,6 +1,7 @@
 <template>
   <div class="row">
     <div class="container">
+      <a class="btn btn-info" target="_blank" :href="sourceUrl">條件連結</a>
       <div v-for="jobBlock in jobInfoDatas" :key="jobBlock">
         <div class="block-header">
           <h2 class="time-block">{{jobBlock.synchronizeDate}}</h2>
@@ -33,6 +34,7 @@ export default {
   data() {
     return {
       jobInfoDatas: [],
+      sourceUrl: "",
     };
   },
   created() {
@@ -42,7 +44,8 @@ export default {
     }`;
     Vue.axios.get(url).then((response) => {
       this.jobInfoDatas = [];
-      $.each(response.data, (jobInfosIndex, jobInfos) => {
+      this.sourceUrl = response.data.sourceUrl;
+      $.each(response.data.jobData, (jobInfosIndex, jobInfos) => {
         this.jobInfoDatas.push(jobInfos);
       });
       console.log(this.jobInfoDatas);

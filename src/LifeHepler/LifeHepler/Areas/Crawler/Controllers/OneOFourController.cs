@@ -17,21 +17,21 @@ namespace LifeHepler.Areas.Crawler.Controllers
             _oneOFourCrawlerService = oneOFourCrawlerService;
         }
 
-        private IEnumerable<object> SynAndReadData(int type)
+        [HttpGet("GetJobInfo")]
+        public object GetOneOFourXml(int type)
         {
-            var result = _oneOFourCrawlerService.SynAndReadData(type).Select(x => new
+            var sourceUrl = _oneOFourCrawlerService.GetSourceUrl(type);
+            var result = new
             {
-                SynchronizeDate = x.SynchronizeDate.Value.ToString("yyyy-MM-dd HH:mm:ss"),
-                x.OneOFourHtmlJobInfos
-            });
+                sourceUrl,
+                jobData = _oneOFourCrawlerService.SynAndReadData(type).Select(x => new
+                {
+                    SynchronizeDate = x.SynchronizeDate.Value.ToString("yyyy-MM-dd HH:mm:ss"),
+                    x.OneOFourHtmlJobInfos
+                })
+            };
 
             return result;
-        }
-
-        [HttpGet("GetJobInfo")]
-        public IEnumerable<object> GetOneOFourXml(int type)
-        {
-            return SynAndReadData(type);
         }
     }
 }
