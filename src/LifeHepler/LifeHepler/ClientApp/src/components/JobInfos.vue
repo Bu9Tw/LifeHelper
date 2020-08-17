@@ -26,7 +26,7 @@
 </template>
 
 <script>
-import Vue from "vue";
+// import Vue from "vue";
 import $ from "jquery";
 
 export default {
@@ -35,16 +35,25 @@ export default {
     return {
       jobInfoDatas: [],
       sourceUrl: "",
+      hostUrl: "https://localhost:44331",
     };
   },
   created() {
     let searchParams = new URLSearchParams(window.location.search);
-    let url = `/api/oneofour/GetJobInfo?type=${
-      searchParams.has("type") ? searchParams.get("type") : "1"
-    }`;
-    Vue.axios.get(url).then((response) => {
-      this.sourceUrl = response.data.sourceUrl;
-      this.jobInfoDatas = response.data.jobData;
+    let type = searchParams.has("type") ? searchParams.get("type") : "1";
+
+    $.post(`${this.hostUrl}/api/OneOFour/SynJobData?type=${type}`, {
+      type: type,
+    }).done((data) => {
+      console.log(data);
+    });
+
+    $.when(
+      $.get(`${this.hostUrl}/api/OneOFour/GetSourceUrl?type=${type}`),
+      $.get(`${this.hostUrl}/api/OneOFour/GetJobInfo?type=${type}`)
+    ).done((sourceUrl, jobInfo) => {
+      this.sourceUrl = sourceUrl[0];
+      this.jobInfoDatas = jobInfo[0];
     });
   },
 };

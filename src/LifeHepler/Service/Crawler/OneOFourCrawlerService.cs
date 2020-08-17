@@ -47,7 +47,7 @@ namespace Service.Crawler
         /// 取得當天已存在的xml檔案資料
         /// </summary>
         /// <returns></returns>
-        public IEnumerable<OneOFourHtmlModel> GetOneOFourLocalXmlInfo(int userType)
+        public List<OneOFourHtmlModel> GetOneOFourLocalXmlInfo(int userType)
         {
             var filePath = GetFilePath(userType);
             if (!Directory.Exists(_dirPath) || !File.Exists(filePath))
@@ -69,29 +69,25 @@ namespace Service.Crawler
                     WorkPlace = y.Element("WorkPlace").Value,
                     WorkTime = y.Element("WorkTime").Value,
                     IsShow = y.Element("IsShow").Value.Ext_IsTrue()
-                }).Where(x => x.IsShow)
-            }).Where(x => !x.OneOFourHtmlJobInfos.Ext_IsNullOrEmpty());
+                }).Where(x => x.IsShow).ToList()
+            }).Where(x => !x.OneOFourHtmlJobInfos.Ext_IsNullOrEmpty()).ToList();
         }
 
         /// <summary>
         /// 同步104職缺資料
         /// </summary>
-        public void SynchronizeOneOFourXml(int userType)
+        public List<OneOFourHtmlModel> SynchronizeOneOFourXml(int userType)
         {
-            var oldJobData = GetOneOFourLocalXmlInfo(userType);
+            var localJobData = GetOneOFourLocalXmlInfo(userType);
 
-            if (!oldJobData.Ext_IsNullOrEmpty() && oldJobData.Any() && oldJobData.Max(x => x.SynchronizeDate.Value).AddMinutes(10) > GetTime.TwNow)
-                return;
+            if (!localJobData.Ext_IsNullOrEmpty() && localJobData.Max(x => x.SynchronizeDate.Value).AddMinutes(10) > GetTime.TwNow)
+                return new List<OneOFourHtmlModel>();
 
             HttpWebRequest request;
             var page = 1;
             var requestUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.105 Safari/537.36";
             var requestAccept = "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9";
-            var htmlJobInfo = new OneOFourHtmlModel
-            {
-                SynchronizeDate = GetTime.TwNow,
-                OneOFourHtmlJobInfos = new List<OneOFourHtmlModel.OneOFourHtmlJobInfo>()
-            };
+            var htmlJobInfo = new List<OneOFourHtmlModel.OneOFourHtmlJobInfo>();
 
             while (true)
             {
@@ -120,7 +116,7 @@ namespace Service.Crawler
                             break;
                         //html To model
                         var tmpSimpleJobInfo = new OneOFourHtmlModel(articleList);
-                        htmlJobInfo.OneOFourHtmlJobInfos = htmlJobInfo.OneOFourHtmlJobInfos.Concat(tmpSimpleJobInfo.OneOFourHtmlJobInfos);
+                        htmlJobInfo.AddRange(tmpSimpleJobInfo.OneOFourHtmlJobInfos);
                     }
                     else
                     {
@@ -157,7 +153,7 @@ namespace Service.Crawler
                         using (var sr = new StreamReader(response.GetResponseStream(), Encoding.UTF8))
                         {
                             var jobDetailJson = sr.ReadToEnd();
-                            var jobData = JsonSerializer.Deserialize<JobDetailInfo>(jobDetailJson);
+                            var jobData =  jobDetailJson.Ext_ToType<JobDetailInfo>();
 
                             x.Pay = jobData.data.jobDetail.salary;
                             x.WorkPlace = jobData.data.jobDetail.addressRegion + jobData.data.jobDetail.addressDetail;
@@ -188,44 +184,43 @@ namespace Service.Crawler
                 return x;
             });
 
-            var existJobNoList = oldJobData.Ext_IsNullOrEmpty() ?
+            var existJobNoList = localJobData.Ext_IsNullOrEmpty() ?
                 new List<string>() :
-                oldJobData.SelectMany(x => x.OneOFourHtmlJobInfos.Select(y => y.No)).ToList();
+                localJobData.SelectMany(x => x.OneOFourHtmlJobInfos.Select(y => y.No)).ToList();
 
-            htmlJobInfo.OneOFourHtmlJobInfos = htmlJobInfo.OneOFourHtmlJobInfos
-                .Where(x => !existJobNoList.Contains(x.No))
-                .Select(x => filterJobCondition(x))
-                .Where(x => x != null)
-                .ToList();
+            var newJobInfo = htmlJobInfo
+                 .Where(x => !existJobNoList.Contains(x.No))
+                 .Select(x => filterJobCondition(x))
+                 .Where(x => x != null)
+                 .ToList();
 
             //如果沒有抓到新資料，就直接踢掉
-            if (htmlJobInfo.OneOFourHtmlJobInfos.Ext_IsNullOrEmpty() || !htmlJobInfo.OneOFourHtmlJobInfos.Any())
-                return;
+            if (newJobInfo.Ext_IsNullOrEmpty())
+                return new List<OneOFourHtmlModel>();
 
-            //如果沒有舊資料，就直接存不與新資料比較
-            if (oldJobData.Ext_IsNullOrEmpty())
+            var newJobModel = new List<OneOFourHtmlModel>
             {
-                SaveJobDataToLocal(new List<OneOFourHtmlModel> { htmlJobInfo }, userType);
-                return;
-            }
+                new OneOFourHtmlModel
+                {
+                    SynchronizeDate = GetTime.TwNow,
+                    OneOFourHtmlJobInfos = newJobInfo
+                }
+            };
 
-            htmlJobInfo.OneOFourHtmlJobInfos = htmlJobInfo.OneOFourHtmlJobInfos.Where(x => !existJobNoList.Contains(x.No));
+            var totalJobDataModel = newJobModel.Ext_Copy();
+            
+            totalJobDataModel.AddRange(localJobData);
 
-            //沒有新資料就不存
-            if (htmlJobInfo.OneOFourHtmlJobInfos.Ext_IsNullOrEmpty() || !htmlJobInfo.OneOFourHtmlJobInfos.Any())
-                return;
+            SaveJobDataToLocal(totalJobDataModel.OrderByDescending(x => x.SynchronizeDate), userType);
 
-            var totalJobData = new List<OneOFourHtmlModel> { htmlJobInfo };
-            totalJobData.AddRange(oldJobData);
-
-            SaveJobDataToLocal(totalJobData.OrderByDescending(x => x.SynchronizeDate), userType);
+            return newJobModel;
         }
 
         /// <summary>
         /// 將資料存到Local
         /// </summary>
         /// <param name="jobData">The job data.</param>
-        private void SaveJobDataToLocal(IEnumerable<OneOFourHtmlModel> jobData,int userType)
+        private void SaveJobDataToLocal(IEnumerable<OneOFourHtmlModel> jobData, int userType)
         {
 
             if (!Directory.Exists(_dirPath))
@@ -269,13 +264,10 @@ namespace Service.Crawler
         /// </summary>
         /// <param name="userType"></param>
         /// <returns></returns>
-        public IEnumerable<OneOFourHtmlModel> SynAndReadData(int userType)
+        public List<OneOFourHtmlModel> SynAndReadData(int userType)
         {
-            SynchronizeOneOFourXml(userType);
-
-            return GetOneOFourLocalXmlInfo(userType).OrderByDescending(x => x.SynchronizeDate);
+            return SynchronizeOneOFourXml(userType).OrderByDescending(x => x.SynchronizeDate).ToList();
         }
-
 
     }
 }

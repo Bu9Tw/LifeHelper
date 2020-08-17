@@ -29,7 +29,7 @@ namespace Model.Crawler
 
         public DateTime? SynchronizeDate { get; set; }
 
-        public IEnumerable<OneOFourHtmlJobInfo> OneOFourHtmlJobInfos { get; set; }
+        public List<OneOFourHtmlJobInfo> OneOFourHtmlJobInfos { get; set; }
 
         public class OneOFourHtmlJobInfo
         {

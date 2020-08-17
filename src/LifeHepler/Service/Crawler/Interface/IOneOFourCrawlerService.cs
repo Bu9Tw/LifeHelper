@@ -9,18 +9,18 @@ namespace Service.Crawler.Interface
         /// 更新與存取檔案
         /// </summary>
         /// <returns></returns>
-        public IEnumerable<OneOFourHtmlModel> SynAndReadData(int userType);
+        public List<OneOFourHtmlModel> SynAndReadData(int userType);
 
         /// <summary>
         /// 同步104職缺資料
         /// </summary>
-        public void SynchronizeOneOFourXml(int userType);
+        public List<OneOFourHtmlModel> SynchronizeOneOFourXml(int userType);
 
         /// <summary>
         /// 取得當天已存在的xml檔案資料
         /// </summary>
         /// <returns></returns>
-        public IEnumerable<OneOFourHtmlModel> GetOneOFourLocalXmlInfo(int userType);
+        public List<OneOFourHtmlModel> GetOneOFourLocalXmlInfo(int userType);
 
         /// <summary>
         /// 取得來源URL
