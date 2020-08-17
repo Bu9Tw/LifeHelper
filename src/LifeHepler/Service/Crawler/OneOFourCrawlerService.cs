@@ -80,7 +80,7 @@ namespace Service.Crawler
         {
             var localJobData = GetOneOFourLocalXmlInfo(userType);
 
-            if (!localJobData.Ext_IsNullOrEmpty() && localJobData.Max(x => x.SynchronizeDate.Value).AddMinutes(10) > GetTime.TwNow)
+            if (!localJobData.Ext_IsNullOrEmpty() && localJobData.Max(x => x.SynchronizeDate.Value).AddMinutes(5) > GetTime.TwNow)
                 return new List<OneOFourHtmlModel>();
 
             HttpWebRequest request;

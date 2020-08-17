@@ -86,7 +86,6 @@ namespace LifeHepler
                             .RequireCors(CorsPolicy);
             });
 
-
             app.Use(async (context, next) =>
             {
                 await next();
