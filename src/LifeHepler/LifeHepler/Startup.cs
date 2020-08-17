@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -22,13 +23,16 @@ namespace LifeHepler
 {
     public class Startup
     {
+        readonly string CorsPolicy = "CorsPolicy";
+
+
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
         }
 
         public IConfiguration Configuration { get; }
-        
+
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
@@ -40,6 +44,15 @@ namespace LifeHepler
             services.Configure<OneOFourJobInfoSourceUrlModel>(Configuration.GetSection("OneOFourJobInfoSourceUrl"));
             services.AddScoped<IGoogleSheetService, GoogleSheetService>();
             services.AddScoped<IOneOFourCrawlerService, OneOFourCrawlerService>();
+
+            services.AddCors(options =>
+            {
+                options.AddPolicy(CorsPolicy, policy =>
+                {
+                    policy.WithOrigins("http://localhost:8080");
+                });
+            });
+
             //每次Call Method都注入一個新的
             //services.AddTransient
             //每個LifeCycle注入一個新的
@@ -65,17 +78,20 @@ namespace LifeHepler
 
             app.UseAuthorization();
 
+            app.UseCors();
+
             app.UseEndpoints(endpoints =>
             {
-                endpoints.MapControllers();
+                endpoints.MapControllers()
+                            .RequireCors(CorsPolicy);
             });
 
             app.Use(async (context, next) =>
             {
                 await next();
 
-                if(context.Response.StatusCode == 404 &&
-                !System.IO.Path.HasExtension(context.Request.Path.Value)&&
+                if (context.Response.StatusCode == 404 &&
+                !System.IO.Path.HasExtension(context.Request.Path.Value) &&
                 !context.Request.Path.Value.StartsWith("/api"))
                 {
                     context.Request.Path = "/index.html";

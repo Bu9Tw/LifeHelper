@@ -3,6 +3,7 @@ using Google.Apis.Services;
 using Google.Apis.Sheets.v4;
 using Google.Apis.Sheets.v4.Data;
 using Google.Apis.Util.Store;
+using HeplerLibs.ExtLib;
 using Microsoft.Extensions.Options;
 using Model.GoogleSheet;
 using Service.GoogleSheet.Interface;
@@ -27,7 +28,7 @@ namespace Service.GoogleSheet
             )
         {
             var credentialString = "{\"installed\":"
-                                      + JsonSerializer.Serialize(googleSheetCredential.Value)
+                                      + googleSheetCredential.Value.Ext_ToJson()
                                       + "}";
 
             _SheetsService = OpenSheet(credentialString);

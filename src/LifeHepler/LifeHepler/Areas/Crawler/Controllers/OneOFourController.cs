@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Cors;
+using Microsoft.AspNetCore.Mvc;
 using Model.Crawler;
 using Service.Crawler.Interface;
 using System.Collections.Generic;
@@ -17,19 +18,37 @@ namespace LifeHepler.Areas.Crawler.Controllers
             _oneOFourCrawlerService = oneOFourCrawlerService;
         }
 
-        [HttpGet("GetJobInfo")]
-        public object GetOneOFourXml(int type)
+        [HttpGet("GetSourceUrl")]
+        public string GetSourceUrl(int type)
         {
             var sourceUrl = _oneOFourCrawlerService.GetSourceUrl(type);
-            var result = new
-            {
-                sourceUrl,
-                jobData = _oneOFourCrawlerService.SynAndReadData(type).Select(x => new
-                {
-                    SynchronizeDate = x.SynchronizeDate.Value.ToString("yyyy-MM-dd HH:mm:ss"),
-                    x.OneOFourHtmlJobInfos
-                })
-            };
+            return sourceUrl;
+        }
+
+        [HttpGet("GetJobInfo")]
+        public object GetOneOFourData(int type)
+        {
+            var result = _oneOFourCrawlerService
+                    .GetOneOFourLocalXmlInfo(type)
+                    .Select(x => new
+                    {
+                        SynchronizeDate = x.SynchronizeDate.Value.ToString("yyyy-MM-dd HH:mm:ss"),
+                        x.OneOFourHtmlJobInfos
+                    });
+
+            return result;
+        }
+
+        [HttpPost("SynJobData")]
+        public object SynOneOFourData(int type)
+        {
+            var result = _oneOFourCrawlerService
+                    .SynAndReadData(type)
+                    .Select(x => new
+                    {
+                        SynchronizeDate = x.SynchronizeDate.Value.ToString("yyyy-MM-dd HH:mm:ss"),
+                        x.OneOFourHtmlJobInfos
+                    });
 
             return result;
         }
