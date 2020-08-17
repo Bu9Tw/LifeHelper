@@ -59,7 +59,7 @@ export default {
       existJobInfoDatas: [],
       latestJobInfoDatas: [],
       sourceUrl: "",
-      hostUrl: "https://localhost:44331",
+      hostUrl: "",
     };
   },
   created() {
