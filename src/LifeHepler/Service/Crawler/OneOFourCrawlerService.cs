@@ -86,10 +86,15 @@ namespace Service.Crawler
         /// </summary>
         public OneOFourHtmlModel SynchronizeOneOFourXml(int userType)
         {
-            var localJobData = GetOneOFourLocalXmlInfo(userType, false).OrderByDescending(x => x.SynchronizeDate);
+            var localJobData = GetOneOFourLocalXmlInfo(userType, false);
+            var newJobModel = new OneOFourHtmlModel
+            {
+                SynchronizeDate = GetTime.TwNow,
+                OneOFourHtmlJobInfos = new List<OneOFourHtmlModel.OneOFourHtmlJobInfo>()
+            };
 
             if (!IsNeedToSynJobData(userType))
-                return localJobData.OrderByDescending(x => x.SynchronizeDate).FirstOrDefault();
+                return newJobModel;
 
             HttpWebRequest request;
             var page = 1;
@@ -190,22 +195,17 @@ namespace Service.Crawler
             new List<string>() :
             localJobData.SelectMany(x => x.OneOFourHtmlJobInfos.Select(y => y.No)).ToList();
 
-            var newJobModel = new OneOFourHtmlModel
-            {
-                SynchronizeDate = GetTime.TwNow,
-                OneOFourHtmlJobInfos = htmlJobInfo
-                        .Where(x => !existJobNoList.Contains(x.No))
-                        .Select(x => filterJobCondition(x))
-                        .Where(x => x != null)
-                        .ToList()
-            };
-
+            newJobModel.OneOFourHtmlJobInfos = htmlJobInfo
+                       .Where(x => !existJobNoList.Contains(x.No))
+                       .Select(x => filterJobCondition(x))
+                       .Where(x => x != null)
+                       .ToList();
 
             if (!newJobModel.OneOFourHtmlJobInfos.Ext_IsNullOrEmpty())
             {
-                var totalJobDataModel = new List<OneOFourHtmlModel> { newJobModel.Ext_Copy() };
-                totalJobDataModel.AddRange(localJobData);
-                SaveJobDataToLocal(totalJobDataModel.OrderByDescending(x => x.SynchronizeDate), userType);
+                localJobData.Add(newJobModel);
+
+                SaveJobDataToLocal(localJobData.OrderBy(x => x.SynchronizeDate), userType);
             }
 
             newJobModel.OneOFourHtmlJobInfos = newJobModel.OneOFourHtmlJobInfos.Where(x => x.IsShow).ToList();
@@ -261,7 +261,7 @@ namespace Service.Crawler
         {
             var localJobData = GetOneOFourLocalXmlInfo(userType, false).OrderByDescending(x => x.SynchronizeDate);
 
-            return localJobData.Ext_IsNullOrEmpty() || localJobData.Max(x => x.SynchronizeDate.Value).AddMinutes(10) > GetTime.TwNow;
+            return localJobData.Ext_IsNullOrEmpty() || localJobData.Max(x => x.SynchronizeDate.Value).AddMinutes(10) < GetTime.TwNow;
 
         }
 

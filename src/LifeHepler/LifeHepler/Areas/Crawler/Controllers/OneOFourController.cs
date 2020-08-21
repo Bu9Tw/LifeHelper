@@ -27,29 +27,34 @@ namespace LifeHepler.Areas.Crawler.Controllers
         }
 
         [HttpGet("GetJobInfo")]
-        public object GetOneOFourData(int userType)
+        public object GetOneOFourData(int userType, int page, int pageRow)
         {
             var result = _oneOFourCrawlerService
                     .GetOneOFourLocalXmlInfo(userType, true)
-                    .OrderByDescending(x => x.SynchronizeDate)
-                    .Select(x => new
-                    {
-                        SynchronizeDate = x.SynchronizeDate.Value.ToString("yyyy-MM-dd HH:mm:ss"),
-                        OneOFourHtmlJobInfos = x.OneOFourHtmlJobInfos.Select(x => { x.No = Guid.NewGuid().ToString(); return x; })
-                    });
+                    .OrderBy(x => x.SynchronizeDate)
+                    .SelectMany(x => x.OneOFourHtmlJobInfos);
 
-            return result;
+            return new
+            {
+                TotalPage = result.Count() / pageRow + 1,
+                JobInfo = result.Select(x => 
+                { 
+                    x.No = Guid.NewGuid().ToString();
+                    return x; 
+                }).Skip((page - 1) * pageRow).Take(pageRow)
+            };
         }
 
         [HttpPost("SynJobData")]
-        public object SynOneOFourData([FromForm] OneOFourForm model)
+        public int SynOneOFourData([FromForm] OneOFourForm model)
         {
-            var result = _oneOFourCrawlerService.SynchronizeOneOFourXml(model.UserType);
-            return new
-            {
-                SynchronizeDate = result.SynchronizeDate.Value.ToString("yyyy-MM-dd HH:mm:ss"),
-                OneOFourHtmlJobInfos = result.OneOFourHtmlJobInfos.Select(x => { x.No = Guid.NewGuid().ToString(); return x; })
-            };
+            _oneOFourCrawlerService.SynchronizeOneOFourXml(model.UserType);
+
+            var result = _oneOFourCrawlerService
+                    .GetOneOFourLocalXmlInfo(model.UserType, true)
+                    .OrderBy(x => x.SynchronizeDate)
+                    .SelectMany(x => x.OneOFourHtmlJobInfos).Count() / model.PageRow +1;
+            return result;
         }
     }
 }

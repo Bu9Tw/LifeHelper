@@ -2,7 +2,7 @@
   <div class="container">
     <a class="btn btn-info" target="_blank" :href="sourceUrl">條件連結</a>
     <div class="row">
-      <UnReadJobInfo :hostUrl="hostUrl" :userType="userType" />
+      <UnReadJobInfo :hostUrl="hostUrl" :userType="userType" :pageRow="pageRow" />
     </div>
   </div>
 </template>
