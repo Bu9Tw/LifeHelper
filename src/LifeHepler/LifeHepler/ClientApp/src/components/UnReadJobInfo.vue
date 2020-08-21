@@ -70,7 +70,9 @@ export default {
         PageRow: this.pageRow,
       }).done((data) => {
         this.totalPageCount = data;
-        if (this.totalPageCount === 1) location.reload();
+        if (this.totalPageCount === 1) {
+          this.GetUnReadJobInfo(1);
+        }
       });
     },
   },
