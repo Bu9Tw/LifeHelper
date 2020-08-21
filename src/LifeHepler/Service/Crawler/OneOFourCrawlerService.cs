@@ -14,6 +14,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Xml.Linq;
+using System.Xml.XPath;
 
 namespace Service.Crawler
 {
@@ -47,7 +48,7 @@ namespace Service.Crawler
         /// 取得當天已存在的xml檔案資料
         /// </summary>
         /// <returns></returns>
-        public List<OneOFourHtmlModel> GetOneOFourLocalXmlInfo(int userType)
+        public List<OneOFourHtmlModel> GetOneOFourLocalXmlInfo(int userType, bool onlyShowMatch)
         {
             var filePath = GetFilePath(userType);
             if (!Directory.Exists(_dirPath) || !File.Exists(filePath))
@@ -55,7 +56,7 @@ namespace Service.Crawler
 
             var oldXmlDoc = XDocument.Load(filePath);
 
-            return oldXmlDoc.Element("Data").Elements("Block").Select(x => new OneOFourHtmlModel
+            var result = oldXmlDoc.Element("Data").Elements("Block").Select(x => new OneOFourHtmlModel
             {
                 SynchronizeDate = Convert.ToDateTime(x.Element("SynchronizeDate").Value),
                 OneOFourHtmlJobInfos = x.Elements("Job").Select(y => new OneOFourHtmlModel.OneOFourHtmlJobInfo
@@ -69,19 +70,26 @@ namespace Service.Crawler
                     WorkPlace = y.Element("WorkPlace").Value,
                     WorkTime = y.Element("WorkTime").Value,
                     IsShow = y.Element("IsShow").Value.Ext_IsTrue()
-                }).Where(x => x.IsShow).ToList()
+                }).Where(x =>
+                {
+                    if (onlyShowMatch)
+                        return x.IsShow;
+                    return true;
+                }).ToList()
             }).Where(x => !x.OneOFourHtmlJobInfos.Ext_IsNullOrEmpty()).ToList();
+
+            return result;
         }
 
         /// <summary>
         /// 同步104職缺資料
         /// </summary>
-        public List<OneOFourHtmlModel> SynchronizeOneOFourXml(int userType)
+        public OneOFourHtmlModel SynchronizeOneOFourXml(int userType)
         {
-            var localJobData = GetOneOFourLocalXmlInfo(userType);
+            var localJobData = GetOneOFourLocalXmlInfo(userType, false).OrderByDescending(x => x.SynchronizeDate);
 
-            if (!localJobData.Ext_IsNullOrEmpty() && localJobData.Max(x => x.SynchronizeDate.Value).AddMinutes(5) > GetTime.TwNow)
-                return new List<OneOFourHtmlModel>();
+            if (!IsNeedToSynJobData(userType))
+                return localJobData.OrderByDescending(x => x.SynchronizeDate).FirstOrDefault();
 
             HttpWebRequest request;
             var page = 1;
@@ -98,32 +106,28 @@ namespace Service.Crawler
                 request.UserAgent = requestUserAgent;
                 request.Accept = requestAccept;
 
-                using (var response = (HttpWebResponse)request.GetResponse())
+                using var response = (HttpWebResponse)request.GetResponse();
+                HttpStatusCode code = response.StatusCode;
+                if (code != HttpStatusCode.OK)
+                    break;
+                HtmlDocument htmlDoc = new HtmlDocument
                 {
-                    HttpStatusCode code = response.StatusCode;
-                    if (code == HttpStatusCode.OK)
-                    {
-                        HtmlDocument htmlDoc = new HtmlDocument
-                        {
-                            OptionFixNestedTags = true
-                        };
-                        using (var sr = new StreamReader(response.GetResponseStream(), Encoding.UTF8))
-                        {
-                            htmlDoc.Load(sr);
-                        }
-                        var articleList = htmlDoc.DocumentNode.SelectNodes("//*[@id=\"js-job-content\"]/article");
-                        if (articleList == null)
-                            break;
-                        //html To model
-                        var tmpSimpleJobInfo = new OneOFourHtmlModel(articleList);
-                        htmlJobInfo.AddRange(tmpSimpleJobInfo.OneOFourHtmlJobInfos);
-                    }
-                    else
-                    {
-                        break;
-                    }
+                    OptionFixNestedTags = true
+                };
+                using (var sr = new StreamReader(response.GetResponseStream(), Encoding.UTF8))
+                {
+                    htmlDoc.Load(sr);
                 }
+                var articleList = htmlDoc.DocumentNode.SelectNodes("//*[@id=\"js-job-content\"]/article");
+                if (articleList == null)
+                    break;
+                //html To model
+                var tmpSimpleJobInfo = new OneOFourHtmlModel(articleList);
+                htmlJobInfo.AddRange(tmpSimpleJobInfo.OneOFourHtmlJobInfos);
             }
+
+            //以No去除重複資料
+            htmlJobInfo = htmlJobInfo.Ext_DistinctByKey(x => x.No).ToList();
 
             //取得詳細資料的BaseUrl
             var baseUrl = @"https://www.104.com.tw/job/ajax/content/{0}";
@@ -150,70 +154,64 @@ namespace Service.Crawler
                     if (code == HttpStatusCode.OK)
                     {
                         x.IsShow = true;
-                        using (var sr = new StreamReader(response.GetResponseStream(), Encoding.UTF8))
+                        using var sr = new StreamReader(response.GetResponseStream(), Encoding.UTF8);
+                        var jobDetailJson = sr.ReadToEnd();
+                        var jobData = jobDetailJson.Ext_ToType<JobDetailInfo>();
+
+                        x.Pay = jobData.data.jobDetail.salary;
+                        x.WorkPlace = jobData.data.jobDetail.addressRegion + jobData.data.jobDetail.addressDetail;
+                        x.WorkTime = jobData.data.jobDetail.workPeriod;
+
+                        if (userType != 1)
+                            return x;
+
+                        ////不找內湖
+                        //if (jobData.data.jobDetail.addressDetail.Contains("內湖") || jobData.data.jobDetail.addressRegion.Contains("內湖"))
+                        //    return false;
+                        //工作標題有沒有net
+                        if (!jobData.data.header.jobName.ToLower().Contains("net") &&
+                        //工作內容有沒有net
+                        !jobData.data.jobDetail.jobDescription.ToLower().Contains("net") &&
+                        //需要的技能有沒有net
+                        (!jobData.data.condition.specialty.Any() ||
+                        !jobData.data.condition.specialty.Any(x => x.description.ToLower().Contains("net"))))
                         {
-                            var jobDetailJson = sr.ReadToEnd();
-                            var jobData =  jobDetailJson.Ext_ToType<JobDetailInfo>();
-
-                            x.Pay = jobData.data.jobDetail.salary;
-                            x.WorkPlace = jobData.data.jobDetail.addressRegion + jobData.data.jobDetail.addressDetail;
-                            x.WorkTime = jobData.data.jobDetail.workPeriod;
-
-                            if (userType != 1)
-                                return x;
-
-                            ////不找內湖
-                            //if (jobData.data.jobDetail.addressDetail.Contains("內湖") || jobData.data.jobDetail.addressRegion.Contains("內湖"))
-                            //    return false;
-                            //工作標題有沒有net
-                            if (!jobData.data.header.jobName.ToLower().Contains("net") &&
-                                //工作內容有沒有net
-                                !jobData.data.jobDetail.jobDescription.ToLower().Contains("net") &&
-                                //需要的技能有沒有net
-                                (!jobData.data.condition.specialty.Any() ||
-                                !jobData.data.condition.specialty.Any(x => x.description.ToLower().Contains("net"))))
-                            {
-                                x.IsShow = false;
-                                return x;
-                            }
-
+                            x.IsShow = false;
                             return x;
                         }
+
+                        return x;
                     }
                 }
                 return x;
             });
 
             var existJobNoList = localJobData.Ext_IsNullOrEmpty() ?
-                new List<string>() :
-                localJobData.SelectMany(x => x.OneOFourHtmlJobInfos.Select(y => y.No)).ToList();
+            new List<string>() :
+            localJobData.SelectMany(x => x.OneOFourHtmlJobInfos.Select(y => y.No)).ToList();
 
-            var newJobInfo = htmlJobInfo
-                 .Where(x => !existJobNoList.Contains(x.No))
-                 .Select(x => filterJobCondition(x))
-                 .Where(x => x != null)
-                 .ToList();
-
-            //如果沒有抓到新資料，就直接踢掉
-            if (newJobInfo.Ext_IsNullOrEmpty())
-                return new List<OneOFourHtmlModel>();
-
-            var newJobModel = new List<OneOFourHtmlModel>
+            var newJobModel = new OneOFourHtmlModel
             {
-                new OneOFourHtmlModel
-                {
-                    SynchronizeDate = GetTime.TwNow,
-                    OneOFourHtmlJobInfos = newJobInfo
-                }
+                SynchronizeDate = GetTime.TwNow,
+                OneOFourHtmlJobInfos = htmlJobInfo
+                        .Where(x => !existJobNoList.Contains(x.No))
+                        .Select(x => filterJobCondition(x))
+                        .Where(x => x != null)
+                        .ToList()
             };
 
-            var totalJobDataModel = newJobModel.Ext_Copy();
-            
-            totalJobDataModel.AddRange(localJobData);
 
-            SaveJobDataToLocal(totalJobDataModel.OrderByDescending(x => x.SynchronizeDate), userType);
+            if (!newJobModel.OneOFourHtmlJobInfos.Ext_IsNullOrEmpty())
+            {
+                var totalJobDataModel = new List<OneOFourHtmlModel> { newJobModel.Ext_Copy() };
+                totalJobDataModel.AddRange(localJobData);
+                SaveJobDataToLocal(totalJobDataModel.OrderByDescending(x => x.SynchronizeDate), userType);
+            }
+
+            newJobModel.OneOFourHtmlJobInfos = newJobModel.OneOFourHtmlJobInfos.Where(x => x.IsShow).ToList();
 
             return newJobModel;
+
         }
 
         /// <summary>
@@ -259,14 +257,12 @@ namespace Service.Crawler
 
         }
 
-        /// <summary>
-        /// 更新與存取檔案
-        /// </summary>
-        /// <param name="userType"></param>
-        /// <returns></returns>
-        public List<OneOFourHtmlModel> SynAndReadData(int userType)
+        public bool IsNeedToSynJobData(int userType)
         {
-            return SynchronizeOneOFourXml(userType).OrderByDescending(x => x.SynchronizeDate).ToList();
+            var localJobData = GetOneOFourLocalXmlInfo(userType, false).OrderByDescending(x => x.SynchronizeDate);
+
+            return localJobData.Ext_IsNullOrEmpty() || localJobData.Max(x => x.SynchronizeDate.Value).AddMinutes(10) > GetTime.TwNow;
+
         }
 
     }
