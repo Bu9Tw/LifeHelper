@@ -28,21 +28,6 @@ namespace LifeHepler.Controllers
             _logger = logger;
         }
 
-        [HttpGet("logger")]
-        public void GetLogger()
-        {
-            return;
-            _logger.LogInformation(new Exception("123"), "QQ");
-        }
-
-        [HttpGet("OneOFour")]
-        public void OneOFour()
-        {
-            return;
-            _oneOFourCrawlerService.SynchronizeOneOFourXml(1);
-            return;
-        }
-
         [HttpGet("WriteGoogleSheet")]
         public void WriteGoogleSheet()
         {

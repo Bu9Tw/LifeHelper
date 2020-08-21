@@ -22,7 +22,7 @@ namespace Model.Crawler
                 };
                 if (string.IsNullOrEmpty(data.No))
                     return null;
-                data.DetailLink = @"https:" + x.SelectSingleNode("div[1]/h2/a").GetAttributeValue("href", "");
+                data.DetailLink = @"https:" + x.SelectSingleNode("ul/li[3]/a").GetAttributeValue("href", "");
                 return data;
             }).Where(x=>x!=null).ToList();
         }

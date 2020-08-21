@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Model.Crawler;
 using Service.Crawler.Interface;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -19,37 +20,40 @@ namespace LifeHepler.Areas.Crawler.Controllers
         }
 
         [HttpGet("GetSourceUrl")]
-        public string GetSourceUrl(int type)
+        public string GetSourceUrl(int userType)
         {
-            var sourceUrl = _oneOFourCrawlerService.GetSourceUrl(type);
+            var sourceUrl = _oneOFourCrawlerService.GetSourceUrl(userType);
             return sourceUrl;
         }
 
         [HttpGet("GetJobInfo")]
-        public object GetOneOFourData(int type)
+        public object GetOneOFourData(int userType, int page, int pageRow)
         {
             var result = _oneOFourCrawlerService
-                    .GetOneOFourLocalXmlInfo(type)
-                    .Select(x => new
-                    {
-                        SynchronizeDate = x.SynchronizeDate.Value.ToString("yyyy-MM-dd HH:mm:ss"),
-                        x.OneOFourHtmlJobInfos
-                    });
+                    .GetOneOFourLocalXmlInfo(userType, true)
+                    .OrderBy(x => x.SynchronizeDate)
+                    .SelectMany(x => x.OneOFourHtmlJobInfos);
 
-            return result;
+            return new
+            {
+                TotalPage = result.Count() / pageRow + 1,
+                JobInfo = result.Select(x => 
+                { 
+                    x.No = Guid.NewGuid().ToString();
+                    return x; 
+                }).Skip((page - 1) * pageRow).Take(pageRow)
+            };
         }
 
         [HttpPost("SynJobData")]
-        public object SynOneOFourData(int type)
+        public int SynOneOFourData([FromForm] OneOFourForm model)
         {
-            var result = _oneOFourCrawlerService
-                    .SynAndReadData(type)
-                    .Select(x => new
-                    {
-                        SynchronizeDate = x.SynchronizeDate.Value.ToString("yyyy-MM-dd HH:mm:ss"),
-                        x.OneOFourHtmlJobInfos
-                    });
+            _oneOFourCrawlerService.SynchronizeOneOFourXml(model.UserType);
 
+            var result = _oneOFourCrawlerService
+                    .GetOneOFourLocalXmlInfo(model.UserType, true)
+                    .OrderBy(x => x.SynchronizeDate)
+                    .SelectMany(x => x.OneOFourHtmlJobInfos).Count() / model.PageRow +1;
             return result;
         }
     }
