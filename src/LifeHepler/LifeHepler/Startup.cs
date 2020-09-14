@@ -18,6 +18,8 @@ using Service.Crawler;
 using Service.Crawler.Interface;
 using Service.GoogleSheet;
 using Service.GoogleSheet.Interface;
+using Service.Queue.Interface;
+using Service.Queue;
 
 namespace LifeHepler
 {
@@ -44,6 +46,7 @@ namespace LifeHepler
             services.Configure<OneOFourJobInfoSourceUrlModel>(Configuration.GetSection("OneOFourJobInfoSourceUrl"));
             services.AddScoped<IGoogleSheetService, GoogleSheetService>();
             services.AddScoped<IOneOFourCrawlerService, OneOFourCrawlerService>();
+            services.AddScoped<IQueueService, QueueService>();
 
             services.AddCors(options =>
             {

@@ -5,11 +5,13 @@ VisualStudioVersion = 16.0.29709.97
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LifeHepler", "LifeHepler\LifeHepler.csproj", "{D0DD51D1-13F8-45D7-8FE7-F5FF2F044CE5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Model", "Model\Model.csproj", "{5F0D7E79-AC89-477F-8773-98EDF8C94DC6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Model", "Model\Model.csproj", "{5F0D7E79-AC89-477F-8773-98EDF8C94DC6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Service", "Service\Service.csproj", "{3330BFDD-D40B-4781-9823-650EB790AEBC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Service", "Service\Service.csproj", "{3330BFDD-D40B-4781-9823-650EB790AEBC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeplerLibs", "HeplerLibs\HeplerLibs.csproj", "{50DA30C8-F149-4A16-965A-360F34204261}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HeplerLibs", "HeplerLibs\HeplerLibs.csproj", "{50DA30C8-F149-4A16-965A-360F34204261}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Service.TEST", "Service.TEST\Service.TEST.csproj", "{DE927781-C144-4F0C-9D9E-5E91DDFA81F1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,6 +35,10 @@ Global
 		{50DA30C8-F149-4A16-965A-360F34204261}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{50DA30C8-F149-4A16-965A-360F34204261}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{50DA30C8-F149-4A16-965A-360F34204261}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DE927781-C144-4F0C-9D9E-5E91DDFA81F1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DE927781-C144-4F0C-9D9E-5E91DDFA81F1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DE927781-C144-4F0C-9D9E-5E91DDFA81F1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DE927781-C144-4F0C-9D9E-5E91DDFA81F1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

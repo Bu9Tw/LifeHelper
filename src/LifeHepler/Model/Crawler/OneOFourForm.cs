@@ -7,7 +7,5 @@ namespace Model.Crawler
     public class OneOFourForm
     {
         public int UserType { get; set; }
-
-        public int PageRow { get; set; }
     }
 }

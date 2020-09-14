@@ -48,7 +48,6 @@ export default {
   },
   created() {
     this.GetUnReadJobInfo(1);
-    this.SynJobData();
   },
   methods: {
     ReloadHistoryJobInfo(num) {
@@ -62,17 +61,6 @@ export default {
       ).done((data) => {
         this.unReadJob = data.jobInfo;
         this.totalPageCount = data.totalPage;
-      });
-    },
-    SynJobData() {
-      $.post(`${this.hostUrl}/api/OneOFour/SynJobData`, {
-        UserType: this.userType,
-        PageRow: this.pageRow,
-      }).done((data) => {
-        this.totalPageCount = data;
-        if (this.totalPageCount === 1) {
-          this.GetUnReadJobInfo(1);
-        }
       });
     },
   },
