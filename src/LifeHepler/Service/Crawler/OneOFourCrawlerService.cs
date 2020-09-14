@@ -94,6 +94,12 @@ namespace Service.Crawler
 
             var canDo = _queueService.CanProcess(queueFilePath);
 
+            while(!canDo)
+            {
+                Thread.Sleep(60 * 1000);
+                canDo = _queueService.CanProcess(queueFilePath);
+            }
+
             var localJobData = GetOneOFourLocalXmlInfo(userType, false);
             var newJobModel = new OneOFourHtmlModel
             {
@@ -102,7 +108,10 @@ namespace Service.Crawler
             };
 
             if (!IsNeedToSynJobData(userType))
-                return;
+            {
+                _queueService.ProcessDone(queueFilePath);
+                return; 
+            }
 
             HttpWebRequest request;
             var page = 1;
@@ -215,6 +224,8 @@ namespace Service.Crawler
 
                 SaveJobDataToLocal(localJobData.OrderBy(x => x.SynchronizeDate), userType);
             }
+
+            _queueService.ProcessDone(queueFilePath);
         }
 
         /// <summary>

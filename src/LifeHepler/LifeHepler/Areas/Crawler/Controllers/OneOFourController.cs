@@ -46,9 +46,10 @@ namespace LifeHepler.Areas.Crawler.Controllers
         }
 
         [HttpPost("SynJobData")]
-        public void SynOneOFourData([FromForm] OneOFourForm model)
+        public bool SynOneOFourData([FromForm] OneOFourForm model)
         {
             _oneOFourCrawlerService.SynchronizeOneOFourXml(model.UserType);
+            return true;
         }
     }
 }
