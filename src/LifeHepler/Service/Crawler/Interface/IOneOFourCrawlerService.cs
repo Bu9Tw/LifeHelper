@@ -8,7 +8,7 @@ namespace Service.Crawler.Interface
         /// <summary>
         /// 同步104職缺資料
         /// </summary>
-        public OneOFourHtmlModel SynchronizeOneOFourXml(int userType);
+        public void SynchronizeOneOFourXml(int userType);
 
         /// <summary>
         /// 取得當天已存在的xml檔案資料

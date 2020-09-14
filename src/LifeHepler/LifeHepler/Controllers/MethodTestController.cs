@@ -8,106 +8,110 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Service.Crawler.Interface;
 using Service.GoogleSheet.Interface;
+using Service.Queue.Interface;
 
 namespace LifeHepler.Controllers
 {
-    [Route("api/[controller]")]
-    [ApiController]
+    //[Route("api/[controller]")]
+    //[ApiController]
     public class MethodTestController : ControllerBase
     {
-        private readonly IGoogleSheetService _googleSheetService;
+        //private readonly IQueueService _queueService;
+        /*private readonly IGoogleSheetService _googleSheetService;
         private readonly IOneOFourCrawlerService _oneOFourCrawlerService;
-        private readonly ILogger<MethodTestController> _logger;
+        private readonly ILogger<MethodTestController> _logger;*/
 
-        public MethodTestController(IGoogleSheetService googleSheetService,
+        public MethodTestController(/*IQueueService queueService
+            IGoogleSheetService googleSheetService,
             IOneOFourCrawlerService oneOFourCrawlerService,
-            ILogger<MethodTestController> logger)
+            ILogger<MethodTestController> logger*/)
         {
+            /*_queueService = queueService;
             _googleSheetService = googleSheetService;
             _oneOFourCrawlerService = oneOFourCrawlerService;
-            _logger = logger;
+            _logger = logger;*/
         }
 
-        [HttpGet("WriteGoogleSheet")]
-        public void WriteGoogleSheet()
-        {
-            return;
-            var twToday = GetTime.TwNow;//DateTime.Now.AddHours(8);
+        //[HttpGet("WriteGoogleSheet")]
+        //public void WriteGoogleSheet()
+        //{
+        //    return;
+        //    var twToday = GetTime.TwNow;//DateTime.Now.AddHours(8);
 
-            var WorkSheetData1 = new List<IList<object>>
-            {
-                new List<object>
-                {
-                    twToday.ToString("dd"),
-                    "現金1",
-                    "100",
-                    "測試_1"
-                }
-            };
-            var WorkSheetData2 = new List<IList<object>>
-            {
-                new List<object>
-                {
-                    twToday.ToString("dd"),
-                    "現金_2",
-                    "100",
-                    "測試_2"
-                }
-            };
-            var WorkSheetData3 = new List<IList<object>>
-            {
-                new List<object>
-                {
-                    twToday.ToString("dd"),
-                    "現金_3",
-                    "100",
-                    "測試_3"
-                }
-            };
+        //    var WorkSheetData1 = new List<IList<object>>
+        //    {
+        //        new List<object>
+        //        {
+        //            twToday.ToString("dd"),
+        //            "現金1",
+        //            "100",
+        //            "測試_1"
+        //        }
+        //    };
+        //    var WorkSheetData2 = new List<IList<object>>
+        //    {
+        //        new List<object>
+        //        {
+        //            twToday.ToString("dd"),
+        //            "現金_2",
+        //            "100",
+        //            "測試_2"
+        //        }
+        //    };
+        //    var WorkSheetData3 = new List<IList<object>>
+        //    {
+        //        new List<object>
+        //        {
+        //            twToday.ToString("dd"),
+        //            "現金_3",
+        //            "100",
+        //            "測試_3"
+        //        }
+        //    };
 
-            var tableName = "Test";
-            var column = "A";
+        //    var tableName = "Test";
+        //    var column = "A";
 
-            var columnNumber = (_googleSheetService.GetTotalColumnCount(tableName, column) + 1).ToString();
-            var endColumn = char.ToString((char)(Convert.ToInt32(column[0]) + 3)) + columnNumber;
-            column += columnNumber;
+        //    var columnNumber = (_googleSheetService.GetTotalColumnCount(tableName, column) + 1).ToString();
+        //    var endColumn = char.ToString((char)(Convert.ToInt32(column[0]) + 3)) + columnNumber;
+        //    column += columnNumber;
 
-            var range = $"{tableName}!{column}:{ endColumn}";
-            _googleSheetService.WriteValue(range, WorkSheetData1);
+        //    var range = $"{tableName}!{column}:{ endColumn}";
+        //    _googleSheetService.WriteValue(range, WorkSheetData1);
 
 
-            _googleSheetService.WriteValue(range, WorkSheetData1);
-            _googleSheetService.WriteValue(range, WorkSheetData2);
-            _googleSheetService.WriteValue(range, WorkSheetData3);
+        //    _googleSheetService.WriteValue(range, WorkSheetData1);
+        //    _googleSheetService.WriteValue(range, WorkSheetData2);
+        //    _googleSheetService.WriteValue(range, WorkSheetData3);
 
-            WorkSheetData1 = new List<IList<object>>
-            {
-                new List<object>
-                {
-                    twToday.ToString("dd"),
-                    "現金_4",
-                    "400",
-                    "測試_4",
-                },
-                new List<object>
-                {
-                    twToday.ToString("dd"),
-                    "現金_5",
-                    "500",
-                    "測試_5",
-                },
-                new List<object>
-                {
-                    twToday.ToString("dd"),
-                    "現金_6",
-                    "600",
-                    "測試_6"
-                }
-            };
+        //    WorkSheetData1 = new List<IList<object>>
+        //    {
+        //        new List<object>
+        //        {
+        //            twToday.ToString("dd"),
+        //            "現金_4",
+        //            "400",
+        //            "測試_4",
+        //        },
+        //        new List<object>
+        //        {
+        //            twToday.ToString("dd"),
+        //            "現金_5",
+        //            "500",
+        //            "測試_5",
+        //        },
+        //        new List<object>
+        //        {
+        //            twToday.ToString("dd"),
+        //            "現金_6",
+        //            "600",
+        //            "測試_6"
+        //        }
+        //    };
 
-            _googleSheetService.WriteValue("Test!F8:I11", WorkSheetData1);
+        //    _googleSheetService.WriteValue("Test!F8:I11", WorkSheetData1);
 
-            return;
-        }
+        //    return;
+        //}
     }
 }

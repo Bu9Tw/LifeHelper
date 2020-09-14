@@ -37,24 +37,18 @@ namespace LifeHepler.Areas.Crawler.Controllers
             return new
             {
                 TotalPage = result.Count() / pageRow + 1,
-                JobInfo = result.Select(x => 
-                { 
+                JobInfo = result.Select(x =>
+                {
                     x.No = Guid.NewGuid().ToString();
-                    return x; 
+                    return x;
                 }).Skip((page - 1) * pageRow).Take(pageRow)
             };
         }
 
         [HttpPost("SynJobData")]
-        public int SynOneOFourData([FromForm] OneOFourForm model)
+        public void SynOneOFourData([FromForm] OneOFourForm model)
         {
             _oneOFourCrawlerService.SynchronizeOneOFourXml(model.UserType);
-
-            var result = _oneOFourCrawlerService
-                    .GetOneOFourLocalXmlInfo(model.UserType, true)
-                    .OrderBy(x => x.SynchronizeDate)
-                    .SelectMany(x => x.OneOFourHtmlJobInfos).Count() / model.PageRow +1;
-            return result;
         }
     }
 }

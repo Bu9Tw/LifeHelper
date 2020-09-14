@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Options;
 using Model.Crawler;
 using Service.Crawler.Interface;
+using Service.Queue.Interface;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -22,13 +23,16 @@ namespace Service.Crawler
     {
         private readonly IHostingEnvironment _hostingEnvironment;
         private readonly OneOFourJobInfoSourceUrlModel _oneOFourJobInfoSourceUrl;
+        private readonly IQueueService _queueService;
         private string _dirPath => Path.Combine(_hostingEnvironment.ContentRootPath, "OneOFourXml");
 
 
         public OneOFourCrawlerService(IHostingEnvironment hostingEnvironment,
-            IOptions<OneOFourJobInfoSourceUrlModel> oneOFourJobInfoSourceUrl)
+            IOptions<OneOFourJobInfoSourceUrlModel> oneOFourJobInfoSourceUrl,
+            IQueueService queueService)
         {
             _hostingEnvironment = hostingEnvironment;
+            _queueService = queueService;
             _oneOFourJobInfoSourceUrl = oneOFourJobInfoSourceUrl.Value;
         }
 
@@ -84,8 +88,12 @@ namespace Service.Crawler
         /// <summary>
         /// 同步104職缺資料
         /// </summary>
-        public OneOFourHtmlModel SynchronizeOneOFourXml(int userType)
+        public void SynchronizeOneOFourXml(int userType)
         {
+            var queueFilePath = _queueService.AddQueue(QueueType.OneOFour);
+
+            var canDo = _queueService.CanProcess(queueFilePath);
+
             var localJobData = GetOneOFourLocalXmlInfo(userType, false);
             var newJobModel = new OneOFourHtmlModel
             {
@@ -94,7 +102,7 @@ namespace Service.Crawler
             };
 
             if (!IsNeedToSynJobData(userType))
-                return newJobModel;
+                return;
 
             HttpWebRequest request;
             var page = 1;
@@ -207,11 +215,6 @@ namespace Service.Crawler
 
                 SaveJobDataToLocal(localJobData.OrderBy(x => x.SynchronizeDate), userType);
             }
-
-            newJobModel.OneOFourHtmlJobInfos = newJobModel.OneOFourHtmlJobInfos.Where(x => x.IsShow).ToList();
-
-            return newJobModel;
-
         }
 
         /// <summary>
