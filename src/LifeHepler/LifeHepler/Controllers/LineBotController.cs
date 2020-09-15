@@ -10,6 +10,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.Extensions.DependencyInjection;
 using HeplerLibs.LineBot;
 using Service.LineBot;
+using Service.Queue.Interface;
 
 namespace LifeHepler.Controllers
 {
@@ -20,6 +21,7 @@ namespace LifeHepler.Controllers
         private readonly LineBotSecretKeyModel _lineBotSecretKey;
         private readonly GoogleSheetModel _googleSheet;
         private readonly IGoogleSheetService _googleSheetService;
+        private readonly IQueueService _queueService;
         private readonly LineMessagingClient _lineMessagingClient;
 
         private readonly IHttpContextAccessor _httpContextAccessor;
@@ -28,7 +30,8 @@ namespace LifeHepler.Controllers
         public LineBotController(IOptions<LineBotSecretKeyModel> lineBotSecretKey,
             IOptions<GoogleSheetModel> googleSheet,
             IGoogleSheetService googleSheetService,
-            IServiceProvider serviceProvider)
+            IServiceProvider serviceProvider,
+            IQueueService queueService)
         {
             _lineBotSecretKey = lineBotSecretKey.Value;
             _googleSheet = googleSheet.Value;
@@ -36,6 +39,7 @@ namespace LifeHepler.Controllers
             _httpContextAccessor = serviceProvider.GetRequiredService<IHttpContextAccessor>();
             _httpContext = _httpContextAccessor.HttpContext;
             _lineMessagingClient = new LineMessagingClient(_lineBotSecretKey.AccessToken);
+            _queueService = queueService;
         }
 
         [HttpPost]
@@ -43,7 +47,7 @@ namespace LifeHepler.Controllers
         {
             var events = await _httpContext.Request.GetWebhookEventsAsync(_lineBotSecretKey.ChannelSecret);
             var lineMessagingClient = new LineMessagingClient(_lineBotSecretKey.AccessToken);
-            var lineBotApp = new LineBotApp(lineMessagingClient, _googleSheetService, _googleSheet);
+            var lineBotApp = new LineBotApp(lineMessagingClient, _googleSheetService, _googleSheet, _queueService);
             await lineBotApp.RunAsync(events);
             return Ok();
 

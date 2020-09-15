@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <TypeScriptCompileBlocked>true</TypeScriptCompileBlocked>
+    <UserSecretsId>c726f6a3-b072-4e57-8830-07d48040b7f7</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
