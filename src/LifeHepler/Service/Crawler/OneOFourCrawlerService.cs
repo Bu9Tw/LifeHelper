@@ -92,12 +92,9 @@ namespace Service.Crawler
         {
             var queueFilePath = _queueService.AddQueue(QueueType.OneOFour);
 
-            var canDo = _queueService.CanProcess(queueFilePath);
-
-            while(!canDo)
+            while(!_queueService.CanProcess(queueFilePath))
             {
                 Thread.Sleep(60 * 1000);
-                canDo = _queueService.CanProcess(queueFilePath);
             }
 
             var localJobData = GetOneOFourLocalXmlInfo(userType, false);

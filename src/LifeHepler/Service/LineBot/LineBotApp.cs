@@ -3,9 +3,11 @@ using Line.Messaging;
 using Line.Messaging.Webhooks;
 using Model.GoogleSheet;
 using Service.GoogleSheet.Interface;
+using Service.Queue.Interface;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Service.LineBot
@@ -14,20 +16,29 @@ namespace Service.LineBot
     {
         private readonly LineMessagingClient _messagingClient;
         private readonly IGoogleSheetService _googleSheetService;
+        private readonly IQueueService _queueService;
         private readonly GoogleSheetModel _googleSheet;
 
         public LineBotApp(LineMessagingClient lineMessagingClient,
             IGoogleSheetService googleSheetService,
-            GoogleSheetModel googleSheet
-            )
+            GoogleSheetModel googleSheet,
+            IQueueService queueService)
         {
             _messagingClient = lineMessagingClient;
             _googleSheet = googleSheet;
             _googleSheetService = googleSheetService;
+            _queueService = queueService;
         }
 
         protected override async Task OnMessageAsync(MessageEvent ev)
         {
+            var queueFilePath = _queueService.AddQueue(QueueType.LineBot);
+
+            while (!_queueService.CanProcess(queueFilePath))
+            {
+                Thread.Sleep(1000);
+            }
+
             //使用者Id
             var userId = ev.Source.UserId;
             var result = new List<ISendMessage>();
@@ -130,6 +141,7 @@ namespace Service.LineBot
             if (result.Any())
                 await _messagingClient.ReplyMessageAsync(ev.ReplyToken, result);
 
+            _queueService.ProcessDone(queueFilePath);
         }
 
     }
