@@ -29,7 +29,7 @@ namespace Service.Queue
             var guid = Guid.NewGuid().ToString();
             var fileName = $"{now}-{guid}";
 
-            var dirPath = Path.Combine(_hostingEnvironment.ContentRootPath, type.ToString());
+            var dirPath = Path.Combine(_hostingEnvironment.ContentRootPath, "locker", type.ToString());
 
             if (!Directory.Exists(dirPath))
                 Directory.CreateDirectory(dirPath);
@@ -39,7 +39,7 @@ namespace Service.Queue
             using (var file = File.Create(fullPath))
             {
                 var dot = new UTF8Encoding(true).GetBytes(".");
-                file.Write(dot,0,dot.Length);
+                file.Write(dot, 0, dot.Length);
             }
 
             return fullPath;
