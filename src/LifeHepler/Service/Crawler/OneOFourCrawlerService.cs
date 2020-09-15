@@ -73,7 +73,8 @@ namespace Service.Crawler
                     Pay = y.Element("Pay").Value,
                     WorkPlace = y.Element("WorkPlace").Value,
                     WorkTime = y.Element("WorkTime").Value,
-                    IsShow = y.Element("IsShow").Value.Ext_IsTrue()
+                    IsShow = y.Element("IsShow").Value.Ext_IsTrue(),
+                    IsReaded = y.Element("IsReaded").Value.Ext_IsTrue()
                 }).Where(x =>
                 {
                     if (onlyShowMatch)
@@ -92,10 +93,8 @@ namespace Service.Crawler
         {
             var queueFilePath = _queueService.AddQueue(QueueType.OneOFour);
 
-            while(!_queueService.CanProcess(queueFilePath))
-            {
+            while (!_queueService.CanProcess(queueFilePath))
                 Thread.Sleep(60 * 1000);
-            }
 
             var localJobData = GetOneOFourLocalXmlInfo(userType, false);
             var newJobModel = new OneOFourHtmlModel
@@ -107,7 +106,7 @@ namespace Service.Crawler
             if (!IsNeedToSynJobData(userType))
             {
                 _queueService.ProcessDone(queueFilePath);
-                return; 
+                return;
             }
 
             HttpWebRequest request;
@@ -248,7 +247,8 @@ namespace Service.Crawler
                                                     new XElement("Pay", ReplaceHexadecimalSymbols(y.Pay)),
                                                     new XElement("WorkPlace", ReplaceHexadecimalSymbols(y.WorkPlace)),
                                                     new XElement("WorkTime", ReplaceHexadecimalSymbols(y.WorkTime)),
-                                                    new XElement("IsShow", ReplaceHexadecimalSymbols(y.IsShow.ToString()))
+                                                    new XElement("IsShow", ReplaceHexadecimalSymbols(y.IsShow.ToString())),
+                                                    new XElement("IsReaded", ReplaceHexadecimalSymbols(y.IsReaded.ToString()))
                                                     ))))));
 
             newXmlDoc.Save(GetFilePath(userType));
@@ -274,6 +274,42 @@ namespace Service.Crawler
 
             return localJobData.Ext_IsNullOrEmpty() || localJobData.Max(x => x.SynchronizeDate.Value).AddMinutes(10) < GetTime.TwNow;
 
+        }
+
+        /// <summary>
+        /// 更新成已讀
+        /// </summary>
+        /// <param name="model">The model.</param>
+        public void UpdateJobInfoToReaded(OneOFourForm model)
+        {
+            if (model.JobNo.Ext_IsNullOrEmpty() || !new int[] { 1, 2 }.Contains(model.UserType))
+                return;
+            
+            var queueFilePath = _queueService.AddQueue(QueueType.OneOFour);
+            while (!_queueService.CanProcess(queueFilePath))
+                Thread.Sleep(60 * 1000);
+
+            var localJobData = GetOneOFourLocalXmlInfo(model.UserType, false);
+            var done = false;
+
+            foreach (var item in localJobData)
+            {
+                foreach (var subItem in item.OneOFourHtmlJobInfos)
+                {
+                    if (subItem.No == model.JobNo)
+                    {
+                        done = true;
+                        subItem.IsReaded = true;
+                        break;
+                    }
+                }
+                if (done)
+                    break;
+            }
+            if (done)
+                SaveJobDataToLocal(localJobData, model.UserType);
+
+            _queueService.ProcessDone(queueFilePath);
         }
 
     }
