@@ -33,13 +33,17 @@ namespace Service.TEST
         [TestMethod]
         public void Queue()
         {
-            var rootPath = Directory.GetFiles(Path.Combine(_hostingEnvironment.ContentRootPath, "UnitTest"));
-            foreach (var item in rootPath)
-                File.Delete(item);
+            var rootPath = Path.Combine(_hostingEnvironment.ContentRootPath, "locker", "UnitTest");
+            if (Directory.Exists(rootPath))
+            {
+                var existFile = Directory.GetFiles(rootPath);
+                foreach (var item in existFile)
+                    File.Delete(item);
+            }
 
             var queueFilePath = _queueService.AddQueue(QueueType.UnitTest);
             var canDo = _queueService.CanProcess(queueFilePath);
-            
+
             if (!canDo)
                 throw new NotImplementedException($"Can Do Is {canDo}");
 
