@@ -11,7 +11,7 @@ namespace Model.Crawler
 
         public OneOFourHtmlModel(HtmlNodeCollection sourceJobHtml)
         {
-            OneOFourHtmlJobInfos = sourceJobHtml.Select(x => 
+            OneOFourHtmlJobInfos = sourceJobHtml.Select(x =>
             {
                 var data = new OneOFourHtmlJobInfo
                 {
@@ -24,7 +24,7 @@ namespace Model.Crawler
                     return null;
                 data.DetailLink = @"https:" + x.SelectSingleNode("ul/li[3]/a").GetAttributeValue("href", "");
                 return data;
-            }).Where(x=>x!=null).ToList();
+            }).Where(x => x != null).ToList();
         }
 
         public DateTime? SynchronizeDate { get; set; }
@@ -74,6 +74,8 @@ namespace Model.Crawler
             public string WorkTime { get; set; }
 
             public bool IsShow { get; set; }
+
+            public bool IsReaded { get; set; }
         }
     }
 

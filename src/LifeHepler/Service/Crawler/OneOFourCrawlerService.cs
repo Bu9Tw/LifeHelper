@@ -73,7 +73,8 @@ namespace Service.Crawler
                     Pay = y.Element("Pay").Value,
                     WorkPlace = y.Element("WorkPlace").Value,
                     WorkTime = y.Element("WorkTime").Value,
-                    IsShow = y.Element("IsShow").Value.Ext_IsTrue()
+                    IsShow = y.Element("IsShow").Value.Ext_IsTrue(),
+                    IsReaded = y.Element("IsReaded").Value.Ext_IsTrue()
                 }).Where(x =>
                 {
                     if (onlyShowMatch)
@@ -248,7 +249,8 @@ namespace Service.Crawler
                                                     new XElement("Pay", ReplaceHexadecimalSymbols(y.Pay)),
                                                     new XElement("WorkPlace", ReplaceHexadecimalSymbols(y.WorkPlace)),
                                                     new XElement("WorkTime", ReplaceHexadecimalSymbols(y.WorkTime)),
-                                                    new XElement("IsShow", ReplaceHexadecimalSymbols(y.IsShow.ToString()))
+                                                    new XElement("IsShow", ReplaceHexadecimalSymbols(y.IsShow.ToString())),
+                                                    new XElement("IsReaded", ReplaceHexadecimalSymbols(y.IsReaded.ToString()))
                                                     ))))));
 
             newXmlDoc.Save(GetFilePath(userType));

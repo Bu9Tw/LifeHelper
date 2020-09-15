@@ -32,7 +32,8 @@ namespace LifeHepler.Areas.Crawler.Controllers
             var result = _oneOFourCrawlerService
                     .GetOneOFourLocalXmlInfo(userType, true)
                     .OrderBy(x => x.SynchronizeDate)
-                    .SelectMany(x => x.OneOFourHtmlJobInfos);
+                    .SelectMany(x => x.OneOFourHtmlJobInfos)
+                    .OrderBy(x=>x.IsReaded);
 
             return new
             {
