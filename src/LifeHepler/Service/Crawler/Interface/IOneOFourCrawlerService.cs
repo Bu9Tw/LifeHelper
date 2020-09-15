@@ -25,6 +25,10 @@ namespace Service.Crawler.Interface
         /// </summary>
         public bool IsNeedToSynJobData(int userType);
 
-
+        /// <summary>
+        /// 更新成已讀
+        /// </summary>
+        /// <param name="model">The model.</param>
+        void UpdateJobInfoToReaded(OneOFourForm model);
     }
 }

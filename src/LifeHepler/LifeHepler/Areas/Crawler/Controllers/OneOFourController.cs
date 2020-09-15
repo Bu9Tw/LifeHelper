@@ -33,16 +33,12 @@ namespace LifeHepler.Areas.Crawler.Controllers
                     .GetOneOFourLocalXmlInfo(userType, true)
                     .OrderBy(x => x.SynchronizeDate)
                     .SelectMany(x => x.OneOFourHtmlJobInfos)
-                    .OrderBy(x=>x.IsReaded);
+                    .OrderBy(x => x.IsReaded);
 
             return new
             {
                 TotalPage = result.Count() / pageRow + 1,
-                JobInfo = result.Select(x =>
-                {
-                    x.No = Guid.NewGuid().ToString();
-                    return x;
-                }).Skip((page - 1) * pageRow).Take(pageRow)
+                JobInfo = result.Skip((page - 1) * pageRow).Take(pageRow)
             };
         }
 
@@ -51,6 +47,12 @@ namespace LifeHepler.Areas.Crawler.Controllers
         {
             _oneOFourCrawlerService.SynchronizeOneOFourXml(model.UserType);
             return true;
+        }
+
+        [HttpPost("UpdateToReaded")]
+        public void UpdateToReaded([FromForm] OneOFourForm model)
+        {
+            _oneOFourCrawlerService.UpdateJobInfoToReaded(model);
         }
     }
 }
