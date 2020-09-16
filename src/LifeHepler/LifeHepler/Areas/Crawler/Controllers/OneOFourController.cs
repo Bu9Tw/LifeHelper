@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Cors;
+﻿using HeplerLibs.Paging;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Model.Crawler;
 using Service.Crawler.Interface;
@@ -38,21 +39,30 @@ namespace LifeHepler.Areas.Crawler.Controllers
             return new
             {
                 TotalPage = result.Count() / pageRow + 1,
-                JobInfo = result.Skip((page - 1) * pageRow).Take(pageRow)
+                JobInfo = result.Paging(page, pageRow)
             };
         }
 
         [HttpPost("SynJobData")]
-        public bool SynOneOFourData([FromForm] OneOFourForm model)
+        public bool SynOneOFourData([FromForm] SynOneOFourForm model)
         {
             _oneOFourCrawlerService.SynchronizeOneOFourXml(model.UserType);
             return true;
         }
 
         [HttpPost("UpdateToReaded")]
-        public void UpdateToReaded([FromForm] OneOFourForm model)
+        public OneOFourHtmlModel.OneOFourHtmlJobInfo UpdateToReaded([FromForm] OneOFourForm model)
         {
             _oneOFourCrawlerService.UpdateJobInfoToReaded(model);
+
+            return _oneOFourCrawlerService
+                .GetOneOFourLocalXmlInfo(model.UserType, true)
+                .OrderBy(x => x.SynchronizeDate)
+                .SelectMany(x => x.OneOFourHtmlJobInfos)
+                .OrderBy(x => x.IsReaded)
+                .Paging(model.CurPageNumber, model.PageRow)
+                .LastOrDefault();
         }
+
     }
 }

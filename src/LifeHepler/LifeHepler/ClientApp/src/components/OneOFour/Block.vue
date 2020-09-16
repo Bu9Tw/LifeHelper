@@ -4,6 +4,7 @@
       <h1 class="header-title">{{job.name}}</h1>
       <span class="article-tag">{{job.pay}}</span>
       <span class="article-tag">{{job.workTime}}</span>
+      <div class="article-tag warning" v-if="job.isReaded">已讀</div>
     </div>
     <section class="article-body">
       <h4>{{job.companyName}}</h4>
@@ -13,7 +14,7 @@
       <div class="col-5">
         <a class="btn btn-info" target="_blank" :href="job.detailLink">104 資訊</a>
       </div>
-      <div class="col-5">
+      <div class="col-5" v-if="!job.isReaded">
         <button class="btn btn-warning" @click="Readed">已讀</button>
       </div>
     </div>
