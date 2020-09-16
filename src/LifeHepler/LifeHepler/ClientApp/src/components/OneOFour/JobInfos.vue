@@ -38,6 +38,7 @@ export default {
       hostUrl: "",
       jobInfos: [],
       totalPageCount: 1,
+      curPageNumber: 1,
     };
   },
   created() {
@@ -57,7 +58,7 @@ export default {
     },
     //Pagination換頁時Reload的Method
     ReloadHistoryJobInfo(num) {
-      console.log(num);
+      this.curPageNumber = num;
       this.GetJobInfo(num);
       this.$goToPageTop();
     },
@@ -71,20 +72,27 @@ export default {
       });
     },
     UpdateJobInfos(jobNo) {
-      var job = $.grep(this.jobInfos, function (item) {
+      let job = $.grep(this.jobInfos, function (item) {
         return item.no === jobNo;
       })[0];
-      var delIndex = this.jobInfos.indexOf(job);
+      let delIndex = this.jobInfos.indexOf(job);
 
       this.jobInfos.splice(delIndex, 1);
 
       $.post(`${this.hostUrl}/api/OneOFour/UpdateToReaded`, {
         UserType: this.userType,
         JobNo: jobNo,
-      }).fail(function (data) {
-        this.$toast.error(`${job.no}-${job.name} 更新錯誤!`);
-        console.log(data);
-      });
+        CurPageNumber: this.curPageNumber,
+        PageRow: this.pageRow,
+      })
+        .done((data) => {
+          let existData = this.jobInfos.find((x) => x.no === data.no);
+          if (data && !existData) this.jobInfos.push(data);
+        })
+        .fail((data) => {
+          this.$toast.error(`${job.no}-${job.name} 更新錯誤!`);
+          console.log(data);
+        });
       console.log("jobinfo : " + jobNo);
     },
   },

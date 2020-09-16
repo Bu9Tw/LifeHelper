@@ -9,5 +9,9 @@ namespace Model.Crawler
         public int UserType { get; set; }
 
         public string JobNo { get; set; }
+
+        public int PageRow { get; set; }
+
+        public int CurPageNumber { get; set; }
     }
 }
