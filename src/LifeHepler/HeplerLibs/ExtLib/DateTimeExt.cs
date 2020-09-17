@@ -12,6 +12,7 @@ namespace HeplerLibs.ExtLib
     public static class GetTime
     {
         public static DateTime TwNow => DateTime.Now.ToUniversalTime().AddHours(8);
+        public static DateTime UtcNow => DateTime.Now.ToUniversalTime();
 
         public static string TwNowString(string format = "yyyyMMddHHmmssfff")
         {

@@ -1,4 +1,5 @@
 ﻿using HeplerLibs.Paging;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Model.Crawler;
@@ -43,9 +44,11 @@ namespace LifeHepler.Areas.Crawler.Controllers
             };
         }
 
+        [Authorize]
         [HttpPost("SynJobData")]
         public bool SynOneOFourData([FromForm] SynOneOFourForm model)
         {
+            return false;
             _oneOFourCrawlerService.SynchronizeOneOFourXml(model.UserType);
             return true;
         }

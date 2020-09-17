@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using HeplerLibs.ExtLib;
@@ -10,7 +9,7 @@ using Service.Crawler.Interface;
 using Service.GoogleSheet.Interface;
 using Service.Queue.Interface;
 
-namespace LifeHepler.Controllers
+namespace LifeHepler.Controllers.API
 {
     //[Route("api/[controller]")]
     //[ApiController]

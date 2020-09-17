@@ -12,7 +12,7 @@ using HeplerLibs.LineBot;
 using Service.LineBot;
 using Service.Queue.Interface;
 
-namespace LifeHepler.Controllers
+namespace LifeHepler.Controllers.API
 {
     [Route("api/[controller]")]
     [ApiController]

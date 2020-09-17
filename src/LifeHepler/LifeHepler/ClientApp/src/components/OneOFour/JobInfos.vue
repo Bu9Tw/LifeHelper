@@ -34,8 +34,8 @@ export default {
       userType: "",
       sourceUrl: "",
       pageRow: 20,
-      //hostUrl: "https://localhost:44331",
-      hostUrl: "",
+      hostUrl: "https://localhost:44331",
+      //hostUrl: "",
       jobInfos: [],
       totalPageCount: 1,
       curPageNumber: 1,
@@ -93,7 +93,6 @@ export default {
           this.$toast.error(`${job.no}-${job.name} 更新錯誤!`);
           console.log(data);
         });
-      console.log("jobinfo : " + jobNo);
     },
   },
 };
