@@ -44,7 +44,7 @@ namespace LifeHepler.Controllers.API
                 issuer: _jwtModel.Issuer,
                 audience: _jwtModel.Audience,
                 claims: claims,
-                expires: GetTime.UtcNow.AddMinutes(1),
+                expires: GetTime.UtcNow.AddMinutes(5),
                 signingCredentials: credentials);
 
             var jwtToken = new JwtSecurityTokenHandler().WriteToken(token);
