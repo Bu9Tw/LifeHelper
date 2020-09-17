@@ -93,7 +93,6 @@ export default {
           this.$toast.error(`${job.no}-${job.name} 更新錯誤!`);
           console.log(data);
         });
-      console.log("jobinfo : " + jobNo);
     },
   },
 };
