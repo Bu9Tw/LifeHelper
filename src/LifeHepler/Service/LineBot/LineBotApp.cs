@@ -57,70 +57,38 @@ namespace Service.LineBot
 
                         if (textSplitData.Count > 4)
                             result.Add(new TextMessage("格式錯誤 ! "));
-                        else if (textSplitData.Count == 1)
-                        {
-                            if (int.TryParse((string)textSplitData[0], out int price))
-                            {
-                                var weekDate = twToday.DayOfWeek.ToString("d");
-
-                                var range = "賣菜農!";
-                                if (weekDate == "0")
-                                {
-                                    //資料洗白
-                                    range += "D2:J3";
-                                    WorkSheetData.Add(new List<object> { textSplitData[0], "", "", "", "", "", "" });
-                                    WorkSheetData.Add(new List<object> { "", "", "", "", "", "" });
-                                }
-                                else
-                                {
-                                    var startColumn = char.ToString((char)(68 + Convert.ToInt64(weekDate)));
-                                    var columnNumber = Convert.ToInt32(twToday.ToString("HH")) < 12 ? "2" : "3";
-                                    WorkSheetData.Add(textSplitData);
-                                    range += $"{startColumn}{columnNumber}";
-                                }
-
-                                _googleSheetService.WriteValue(range, WorkSheetData);
-
-                                result.Add(new TextMessage($"大頭菜{textSplitData[0]}元，輸入成功 ! "));
-                            }
-
-                            var readResult = _googleSheetService.ReadValue("賣菜農!B2:B3");
-
-                            result.AddRange(new TextMessage[]
-                            {
-                                new TextMessage($"可能類型 : {(string)readResult[0][0]}"),
-                                new TextMessage($"結果 : {(string)readResult[1][0]}"),
-                            });
-
-                        }
                         else
                         {
-                            if (textSplitData.Count == 2)
+                            var tmp = new List<object>();
+                            switch (textSplitData.Count)
                             {
-                                var tmp = new List<object>
-                                {
-                                    twToday.ToString("dd"),
-                                    "現金",
-                                };
-                                tmp.AddRange(textSplitData);
-
-                                WorkSheetData.Add(tmp);
+                                case 1:
+                                    tmp = new List<object>
+                                    {
+                                        twToday.ToString("dd"),
+                                        "現金",
+                                    };
+                                    tmp.AddRange(textSplitData);
+                                    tmp.Add("其他");
+                                    break;
+                                case 2:
+                                    tmp = new List<object>
+                                    {
+                                        twToday.ToString("dd"),
+                                        "現金",
+                                    };
+                                    tmp.AddRange(textSplitData);
+                                    break;
+                                case 3:
+                                    tmp.Add(twToday.ToString("dd"));
+                                    tmp.AddRange(textSplitData);
+                                    break;
+                                case 4:
+                                    tmp.AddRange(textSplitData);
+                                    break;
                             }
-                            else if (textSplitData.Count == 3)
-                            {
 
-                                var tmp = new List<object>
-                                {
-                                    twToday.ToString("dd"),
-                                };
-                                tmp.AddRange(textSplitData);
-
-                                WorkSheetData.Add(tmp);
-                            }
-                            else
-                            {
-                                WorkSheetData.Add(textSplitData);
-                            }
+                            WorkSheetData.Add(tmp);
 
                             var tableName = twToday.ToString("MM月");
 
