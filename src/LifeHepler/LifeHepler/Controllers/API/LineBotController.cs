@@ -1,16 +1,15 @@
-﻿using System;
+﻿using HeplerLibs.LineBot;
 using Line.Messaging;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Model.GoogleSheet;
 using Model.LineBot;
 using Service.GoogleSheet.Interface;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Options;
-using Microsoft.Extensions.DependencyInjection;
-using HeplerLibs.LineBot;
 using Service.LineBot;
-using Service.Queue.Interface;
+using System;
+using System.Threading.Tasks;
 
 namespace LifeHepler.Controllers.API
 {
@@ -21,7 +20,6 @@ namespace LifeHepler.Controllers.API
         private readonly LineBotSecretKeyModel _lineBotSecretKey;
         private readonly GoogleSheetModel _googleSheet;
         private readonly IGoogleSheetService _googleSheetService;
-        private readonly IQueueService _queueService;
         private readonly LineMessagingClient _lineMessagingClient;
 
         private readonly IHttpContextAccessor _httpContextAccessor;
@@ -30,8 +28,7 @@ namespace LifeHepler.Controllers.API
         public LineBotController(IOptions<LineBotSecretKeyModel> lineBotSecretKey,
             IOptions<GoogleSheetModel> googleSheet,
             IGoogleSheetService googleSheetService,
-            IServiceProvider serviceProvider,
-            IQueueService queueService)
+            IServiceProvider serviceProvider)
         {
             _lineBotSecretKey = lineBotSecretKey.Value;
             _googleSheet = googleSheet.Value;
@@ -39,7 +36,6 @@ namespace LifeHepler.Controllers.API
             _httpContextAccessor = serviceProvider.GetRequiredService<IHttpContextAccessor>();
             _httpContext = _httpContextAccessor.HttpContext;
             _lineMessagingClient = new LineMessagingClient(_lineBotSecretKey.AccessToken);
-            _queueService = queueService;
         }
 
         [HttpPost]
@@ -47,7 +43,7 @@ namespace LifeHepler.Controllers.API
         {
             var events = await _httpContext.Request.GetWebhookEventsAsync(_lineBotSecretKey.ChannelSecret);
             var lineMessagingClient = new LineMessagingClient(_lineBotSecretKey.AccessToken);
-            var lineBotApp = new LineBotApp(lineMessagingClient, _googleSheetService, _googleSheet, _queueService);
+            var lineBotApp = new LineBotApp(lineMessagingClient, _googleSheetService, _googleSheet);
             await lineBotApp.RunAsync(events);
             return Ok();
 

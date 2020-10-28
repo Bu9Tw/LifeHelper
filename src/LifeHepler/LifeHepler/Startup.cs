@@ -12,8 +12,6 @@ using Service.Crawler;
 using Service.Crawler.Interface;
 using Service.GoogleSheet;
 using Service.GoogleSheet.Interface;
-using Service.Queue;
-using Service.Queue.Interface;
 using System;
 using System.Text;
 
@@ -43,7 +41,6 @@ namespace LifeHepler
             services.Configure<JwtModel>(Configuration.GetSection("Jwt"));
             services.AddScoped<IGoogleSheetService, GoogleSheetService>();
             services.AddScoped<IOneOFourCrawlerService, OneOFourCrawlerService>();
-            services.AddScoped<IQueueService, QueueService>();
 
             services.AddAuthentication(Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme)
                     .AddJwtBearer(options =>

@@ -3,11 +3,9 @@ using Line.Messaging;
 using Line.Messaging.Webhooks;
 using Model.GoogleSheet;
 using Service.GoogleSheet.Interface;
-using Service.Queue.Interface;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Service.LineBot
@@ -16,29 +14,21 @@ namespace Service.LineBot
     {
         private readonly LineMessagingClient _messagingClient;
         private readonly IGoogleSheetService _googleSheetService;
-        private readonly IQueueService _queueService;
         private readonly GoogleSheetModel _googleSheet;
+
+        private static readonly object LockObj = new object();
 
         public LineBotApp(LineMessagingClient lineMessagingClient,
             IGoogleSheetService googleSheetService,
-            GoogleSheetModel googleSheet,
-            IQueueService queueService)
+            GoogleSheetModel googleSheet)
         {
             _messagingClient = lineMessagingClient;
             _googleSheet = googleSheet;
             _googleSheetService = googleSheetService;
-            _queueService = queueService;
         }
 
         protected override async Task OnMessageAsync(MessageEvent ev)
         {
-            var queueFilePath = _queueService.AddQueue(QueueType.LineBot);
-
-            while (!_queueService.CanProcess(queueFilePath))
-            {
-                Thread.Sleep(1000);
-            }
-
             //使用者Id
             var userId = ev.Source.UserId;
             var result = new List<ISendMessage>();
@@ -93,13 +83,15 @@ namespace Service.LineBot
                             var tableName = twToday.ToString("MM月");
 
                             var startColumn = (_googleSheet.Bo == userId ? "A" : "F");
-                            var columnNumber = (_googleSheetService.GetTotalColumnCount(tableName, startColumn) + 1).ToString();
-                            var endColumn = char.ToString((char)(Convert.ToInt32(startColumn[0]) + 3)) + columnNumber;
-                            startColumn += columnNumber;
+                            lock (LockObj)
+                            {
+                                var columnNumber = (_googleSheetService.GetTotalColumnCount(tableName, startColumn) + 1).ToString();
+                                var endColumn = char.ToString((char)(Convert.ToInt32(startColumn[0]) + 3)) + columnNumber;
+                                startColumn += columnNumber;
 
-                            var range = $"{tableName}!{startColumn}:{ endColumn}";
-                            _googleSheetService.WriteValue(range, WorkSheetData);
-
+                                var range = $"{tableName}!{startColumn}:{ endColumn}";
+                                _googleSheetService.WriteValue(range, WorkSheetData);
+                            }
                             result.Add(new TextMessage("輸入成功 ! "));
 
                         }
@@ -108,9 +100,6 @@ namespace Service.LineBot
             }
             if (result.Any())
                 await _messagingClient.ReplyMessageAsync(ev.ReplyToken, result);
-
-            _queueService.ProcessDone(queueFilePath);
         }
-
     }
 }

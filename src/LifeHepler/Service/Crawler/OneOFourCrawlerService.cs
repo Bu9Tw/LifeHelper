@@ -4,18 +4,14 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Options;
 using Model.Crawler;
 using Service.Crawler.Interface;
-using Service.Queue.Interface;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
-using System.Text.Json;
 using System.Text.RegularExpressions;
-using System.Threading;
 using System.Xml.Linq;
-using System.Xml.XPath;
 
 namespace Service.Crawler
 {
@@ -23,16 +19,14 @@ namespace Service.Crawler
     {
         private readonly IHostingEnvironment _hostingEnvironment;
         private readonly OneOFourJobInfoSourceUrlModel _oneOFourJobInfoSourceUrl;
-        private readonly IQueueService _queueService;
         private string _dirPath => Path.Combine(_hostingEnvironment.ContentRootPath, "OneOFourXml");
 
+        private static readonly object LockObj = new object();
 
         public OneOFourCrawlerService(IHostingEnvironment hostingEnvironment,
-            IOptions<OneOFourJobInfoSourceUrlModel> oneOFourJobInfoSourceUrl,
-            IQueueService queueService)
+            IOptions<OneOFourJobInfoSourceUrlModel> oneOFourJobInfoSourceUrl)
         {
             _hostingEnvironment = hostingEnvironment;
-            _queueService = queueService;
             _oneOFourJobInfoSourceUrl = oneOFourJobInfoSourceUrl.Value;
         }
 
@@ -91,137 +85,131 @@ namespace Service.Crawler
         /// </summary>
         public void SynchronizeOneOFourXml(int userType)
         {
-            var queueFilePath = _queueService.AddQueue(QueueType.OneOFour);
-
-            while (!_queueService.CanProcess(queueFilePath))
-                Thread.Sleep(60 * 1000);
-
-            var localJobData = GetOneOFourLocalXmlInfo(userType, false);
-            var newJobModel = new OneOFourHtmlModel
+            lock (LockObj)
             {
-                SynchronizeDate = GetTime.TwNow,
-                OneOFourHtmlJobInfos = new List<OneOFourHtmlModel.OneOFourHtmlJobInfo>()
-            };
 
-            if (!IsNeedToSynJobData(userType))
-            {
-                _queueService.ProcessDone(queueFilePath);
-                return;
-            }
-
-            HttpWebRequest request;
-            var page = 1;
-            var requestUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.105 Safari/537.36";
-            var requestAccept = "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9";
-            var htmlJobInfo = new List<OneOFourHtmlModel.OneOFourHtmlJobInfo>();
-
-            while (true)
-            {
-                var url = string.Format(GetSourceUrl(userType), page++);
-                //爬104資料清單
-                request = (HttpWebRequest)WebRequest.Create(url);
-
-                request.UserAgent = requestUserAgent;
-                request.Accept = requestAccept;
-
-                using var response = (HttpWebResponse)request.GetResponse();
-                HttpStatusCode code = response.StatusCode;
-                if (code != HttpStatusCode.OK)
-                    break;
-                HtmlDocument htmlDoc = new HtmlDocument
+                var localJobData = GetOneOFourLocalXmlInfo(userType, false);
+                var newJobModel = new OneOFourHtmlModel
                 {
-                    OptionFixNestedTags = true
+                    SynchronizeDate = GetTime.TwNow,
+                    OneOFourHtmlJobInfos = new List<OneOFourHtmlModel.OneOFourHtmlJobInfo>()
                 };
-                using (var sr = new StreamReader(response.GetResponseStream(), Encoding.UTF8))
+
+                if (!IsNeedToSynJobData(userType))
+                    return;
+
+                HttpWebRequest request;
+                var page = 1;
+                var requestUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.105 Safari/537.36";
+                var requestAccept = "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9";
+                var htmlJobInfo = new List<OneOFourHtmlModel.OneOFourHtmlJobInfo>();
+
+                while (true)
                 {
-                    htmlDoc.Load(sr);
-                }
-                var articleList = htmlDoc.DocumentNode.SelectNodes("//*[@id=\"js-job-content\"]/article");
-                if (articleList == null)
-                    break;
-                //html To model
-                var tmpSimpleJobInfo = new OneOFourHtmlModel(articleList);
-                htmlJobInfo.AddRange(tmpSimpleJobInfo.OneOFourHtmlJobInfos);
-            }
+                    var url = string.Format(GetSourceUrl(userType), page++);
+                    //爬104資料清單
+                    request = (HttpWebRequest)WebRequest.Create(url);
 
-            //以No去除重複資料
-            htmlJobInfo = htmlJobInfo.Ext_DistinctByKey(x => x.No).ToList();
+                    request.UserAgent = requestUserAgent;
+                    request.Accept = requestAccept;
 
-            //取得詳細資料的BaseUrl
-            var baseUrl = @"https://www.104.com.tw/job/ajax/content/{0}";
-
-            //判斷詳細工作資訊的condition
-            var filterJobCondition = new Func<OneOFourHtmlModel.OneOFourHtmlJobInfo, OneOFourHtmlModel.OneOFourHtmlJobInfo>((x) =>
-            {
-                //取得該工作的網址編號
-                var jobUrlKey = new Uri(x.DetailLink).AbsolutePath.Trim('/').Split('/').LastOrDefault();
-
-                if (jobUrlKey.Ext_IsNullOrEmpty())
-                    return null;
-
-                var ajaxUrl = string.Format(baseUrl, jobUrlKey);
-
-                request = (HttpWebRequest)WebRequest.Create(ajaxUrl);
-                request.UserAgent = requestUserAgent;
-                request.Accept = requestAccept;
-                //驗證用的
-                request.Headers.Add("Referer", x.DetailLink);
-                using (var response = (HttpWebResponse)(request.GetResponse()))
-                {
+                    using var response = (HttpWebResponse)request.GetResponse();
                     HttpStatusCode code = response.StatusCode;
-                    if (code == HttpStatusCode.OK)
+                    if (code != HttpStatusCode.OK)
+                        break;
+                    HtmlDocument htmlDoc = new HtmlDocument
                     {
-                        x.IsShow = true;
-                        using var sr = new StreamReader(response.GetResponseStream(), Encoding.UTF8);
-                        var jobDetailJson = sr.ReadToEnd();
-                        var jobData = jobDetailJson.Ext_ToType<JobDetailInfo>();
+                        OptionFixNestedTags = true
+                    };
+                    using (var sr = new StreamReader(response.GetResponseStream(), Encoding.UTF8))
+                    {
+                        htmlDoc.Load(sr);
+                    }
+                    var articleList = htmlDoc.DocumentNode.SelectNodes("//*[@id=\"js-job-content\"]/article");
+                    if (articleList == null)
+                        break;
+                    //html To model
+                    var tmpSimpleJobInfo = new OneOFourHtmlModel(articleList);
+                    htmlJobInfo.AddRange(tmpSimpleJobInfo.OneOFourHtmlJobInfos);
+                }
 
-                        x.Pay = jobData.data.jobDetail.salary;
-                        x.WorkPlace = jobData.data.jobDetail.addressRegion + jobData.data.jobDetail.addressDetail;
-                        x.WorkTime = jobData.data.jobDetail.workPeriod;
+                //以No去除重複資料
+                htmlJobInfo = htmlJobInfo.Ext_DistinctByKey(x => x.No).ToList();
 
-                        if (userType != 1)
-                            return x;
+                //取得詳細資料的BaseUrl
+                var baseUrl = @"https://www.104.com.tw/job/ajax/content/{0}";
 
-                        ////不找內湖
-                        //if (jobData.data.jobDetail.addressDetail.Contains("內湖") || jobData.data.jobDetail.addressRegion.Contains("內湖"))
-                        //    return false;
-                        //工作標題有沒有net
-                        if (!jobData.data.header.jobName.ToLower().Contains("net") &&
-                        //工作內容有沒有net
-                        !jobData.data.jobDetail.jobDescription.ToLower().Contains("net") &&
-                        //需要的技能有沒有net
-                        (!jobData.data.condition.specialty.Any() ||
-                        !jobData.data.condition.specialty.Any(x => x.description.ToLower().Contains("net"))))
+                //判斷詳細工作資訊的condition
+                var filterJobCondition = new Func<OneOFourHtmlModel.OneOFourHtmlJobInfo, OneOFourHtmlModel.OneOFourHtmlJobInfo>((x) =>
+                {
+                    //取得該工作的網址編號
+                    var jobUrlKey = new Uri(x.DetailLink).AbsolutePath.Trim('/').Split('/').LastOrDefault();
+
+                    if (jobUrlKey.Ext_IsNullOrEmpty())
+                        return null;
+
+                    var ajaxUrl = string.Format(baseUrl, jobUrlKey);
+
+                    request = (HttpWebRequest)WebRequest.Create(ajaxUrl);
+                    request.UserAgent = requestUserAgent;
+                    request.Accept = requestAccept;
+                    //驗證用的
+                    request.Headers.Add("Referer", x.DetailLink);
+                    using (var response = (HttpWebResponse)(request.GetResponse()))
+                    {
+                        HttpStatusCode code = response.StatusCode;
+                        if (code == HttpStatusCode.OK)
                         {
-                            x.IsShow = false;
+                            x.IsShow = true;
+                            using var sr = new StreamReader(response.GetResponseStream(), Encoding.UTF8);
+                            var jobDetailJson = sr.ReadToEnd();
+                            var jobData = jobDetailJson.Ext_ToType<JobDetailInfo>();
+
+                            x.Pay = jobData.data.jobDetail.salary;
+                            x.WorkPlace = jobData.data.jobDetail.addressRegion + jobData.data.jobDetail.addressDetail;
+                            x.WorkTime = jobData.data.jobDetail.workPeriod;
+
+                            if (userType != 1)
+                                return x;
+
+                            ////不找內湖
+                            //if (jobData.data.jobDetail.addressDetail.Contains("內湖") || jobData.data.jobDetail.addressRegion.Contains("內湖"))
+                            //    return false;
+                            //工作標題有沒有net
+                            if (!jobData.data.header.jobName.ToLower().Contains("net") &&
+                                //工作內容有沒有net
+                                !jobData.data.jobDetail.jobDescription.ToLower().Contains("net") &&
+                                //需要的技能有沒有net
+                                (!jobData.data.condition.specialty.Any() ||
+                                !jobData.data.condition.specialty.Any(x => x.description.ToLower().Contains("net"))))
+                            {
+                                x.IsShow = false;
+                                return x;
+                            }
+
                             return x;
                         }
-
-                        return x;
                     }
+                    return x;
+                });
+
+                var existJobNoList = localJobData.Ext_IsNullOrEmpty() ?
+                new List<string>() :
+                localJobData.SelectMany(x => x.OneOFourHtmlJobInfos.Select(y => y.No)).ToList();
+
+                newJobModel.OneOFourHtmlJobInfos = htmlJobInfo
+                           .Where(x => !existJobNoList.Contains(x.No))
+                           .Select(x => filterJobCondition(x))
+                           .Where(x => x != null)
+                           .ToList();
+
+                if (!newJobModel.OneOFourHtmlJobInfos.Ext_IsNullOrEmpty())
+                {
+                    localJobData.Add(newJobModel);
+
+                    SaveJobDataToLocal(localJobData.OrderBy(x => x.SynchronizeDate), userType);
                 }
-                return x;
-            });
-
-            var existJobNoList = localJobData.Ext_IsNullOrEmpty() ?
-            new List<string>() :
-            localJobData.SelectMany(x => x.OneOFourHtmlJobInfos.Select(y => y.No)).ToList();
-
-            newJobModel.OneOFourHtmlJobInfos = htmlJobInfo
-                       .Where(x => !existJobNoList.Contains(x.No))
-                       .Select(x => filterJobCondition(x))
-                       .Where(x => x != null)
-                       .ToList();
-
-            if (!newJobModel.OneOFourHtmlJobInfos.Ext_IsNullOrEmpty())
-            {
-                localJobData.Add(newJobModel);
-
-                SaveJobDataToLocal(localJobData.OrderBy(x => x.SynchronizeDate), userType);
             }
-
-            _queueService.ProcessDone(queueFilePath);
         }
 
         /// <summary>
@@ -282,34 +270,32 @@ namespace Service.Crawler
         /// <param name="model">The model.</param>
         public void UpdateJobInfoToReaded(OneOFourForm model)
         {
-            if (model.JobNo.Ext_IsNullOrEmpty() || !new int[] { 1, 2 }.Contains(model.UserType))
-                return;
-            
-            var queueFilePath = _queueService.AddQueue(QueueType.OneOFour);
-            while (!_queueService.CanProcess(queueFilePath))
-                Thread.Sleep(60 * 1000);
-
-            var localJobData = GetOneOFourLocalXmlInfo(model.UserType, false);
-            var done = false;
-
-            foreach (var item in localJobData)
+            lock (LockObj)
             {
-                foreach (var subItem in item.OneOFourHtmlJobInfos)
+
+                if (model.JobNo.Ext_IsNullOrEmpty() || !new int[] { 1, 2 }.Contains(model.UserType))
+                    return;
+
+                var localJobData = GetOneOFourLocalXmlInfo(model.UserType, false);
+                var done = false;
+
+                foreach (var item in localJobData)
                 {
-                    if (subItem.No == model.JobNo)
+                    foreach (var subItem in item.OneOFourHtmlJobInfos)
                     {
-                        done = true;
-                        subItem.IsReaded = true;
-                        break;
+                        if (subItem.No == model.JobNo)
+                        {
+                            done = true;
+                            subItem.IsReaded = true;
+                            break;
+                        }
                     }
+                    if (done)
+                        break;
                 }
                 if (done)
-                    break;
+                    SaveJobDataToLocal(localJobData, model.UserType);
             }
-            if (done)
-                SaveJobDataToLocal(localJobData, model.UserType);
-
-            _queueService.ProcessDone(queueFilePath);
         }
 
     }

@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Service.Crawler.Interface;
 using Service.GoogleSheet.Interface;
-using Service.Queue.Interface;
 
 namespace LifeHepler.Controllers.API
 {
